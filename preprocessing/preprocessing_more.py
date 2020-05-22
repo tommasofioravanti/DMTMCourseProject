@@ -36,3 +36,10 @@ def _to_categorical(df_train: pd.DataFrame) -> pd.DataFrame:
     df_train["pack"] = df_train["pack"].astype('category')
     df_train["pack"] = df_train["pack"].cat.codes
     return df_train
+
+def convert_date(df):
+    df['Unnamed: 0'] = df['Unnamed: 0'].str.split(" ")
+    df['Unnamed: 0'] = df['Unnamed: 0'].apply(lambda x: "-".join(x[1:]))
+    df = df.rename(columns={'Unnamed: 0':'Date'})
+    df.Date = pd.to_datetime(df.Date)
+    return df
