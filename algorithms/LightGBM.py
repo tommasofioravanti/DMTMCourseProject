@@ -21,7 +21,7 @@ X_train, X_test, y_train, y_test = train_test_split(
                                         df_train.drop(['target','scope'],axis=1), 
                                         df_train.target, 
                                         test_size=0.2, 
-                                        random_state=17
+                                        shuffle=False
                                         )
 
 # init model

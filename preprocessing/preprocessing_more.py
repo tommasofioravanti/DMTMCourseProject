@@ -1,12 +1,17 @@
 import pandas as pd
 from datetime import datetime
 
+# TODO:
+# - feature che tiene conto delle vendite fatte complessivamente
+# - feature che tiene conto delle vendite fatte negli ultimi 1,2,3,6 mesi
+# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra
+
 def preprocessing_more(df_train: pd.DataFrame) -> pd.DataFrame:
     # first split the date into columns
     df_train = _split_date(df_train)
     # transform to categorical
     df_train = _to_categorical(df_train)
-    df_train = df_train.fillna(-1)
+    df_train = df_train.fillna(0)
     df_train = df_train.sort_values(by=['year','month','day']).reset_index(drop=True)
     return df_train
     
