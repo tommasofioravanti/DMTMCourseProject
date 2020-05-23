@@ -31,7 +31,7 @@ model = lgb.LGBMRegressor()
 model.fit(
     X_train, 
     y_train, 
-    categorical_feature=['pack', 'brand','day','year','month']
+    categorical_feature=['pack', 'brand','day','year','month','sku']
     )
 
 # performance evaluation
