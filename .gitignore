@@ -3,3 +3,4 @@ dataset/.DS_Store
 *.csv
 *.pyc
 *checkpoint.ipynb
+*.ipynb_checkpoints
