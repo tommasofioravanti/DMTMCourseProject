@@ -4,7 +4,7 @@ from datetime import datetime
 # TODO:
 # - feature che tiene conto delle vendite fatte complessivamente
 # - feature che tiene conto delle vendite fatte negli ultimi 1,2,3,6 mesi
-# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra # Fatta by Ale
+# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra
 
 def preprocessing_more(df_train: pd.DataFrame) -> pd.DataFrame:
     # first split the date into columns

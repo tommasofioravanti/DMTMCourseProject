@@ -106,7 +106,7 @@ predictions = lgb.predict(X_val)
 
 predictions = [p for x in predictions for p in x ]
 mape = MAPE(val.target, predictions)
-print(f'MAPE={mape}')
+print(f'\n MAPE={mape}')
 
 
 # Plot Feature Importance
