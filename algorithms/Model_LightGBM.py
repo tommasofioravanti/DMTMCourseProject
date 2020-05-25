@@ -41,6 +41,12 @@ def add_all_features(df):
     df['month'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[1]).astype(int)
     df['day'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[2]).astype(int)
 
+    # Cluster
+    cluster = pd.read_csv("../dataset/cluster.csv")
+    cluster = cluster.rename(columns={'Label':'cluster', 'Sku':'sku'})
+    df = df.merge(cluster, how='left', on='sku')
+
+
     # TODO Add Season
 
     return df
@@ -50,6 +56,7 @@ def add_all_features(df):
 It is more easier for the model to predict correctly if the distribution is not that right-skewed which is
 corrected by modelling log(sales) than sales."""
 
+real_values = df[['Date', 'sku', 'target']].rename(columns={'target':'real_target'})
 df['target'] = np.log1p(df.target.values)
 df['sales w-1'] = np.log1p(df['sales w-1'].values)
 
@@ -105,8 +112,17 @@ predictions = lgb.predict(X_val)
 """
 
 predictions = [p for x in predictions for p in x ]
-mape = MAPE(val.target, predictions)
+
+predictions = np.expm1(predictions)
+real_values_val = real_values[real_values.Date.isin(val_dates)]
+val = val.merge(real_values_val, how='left', on=['Date', 'sku'])
+print(f'Nans in val.real_target {val.real_target.isna().sum()}')
+
+mape = MAPE(val.real_target, predictions)
 print(f'\n MAPE={mape}')
+
+val['predictions'] = predictions
+print(val[['real_target', 'predictions']])
 
 
 # Plot Feature Importance
@@ -114,3 +130,4 @@ plt.figure(figsize=(8,5))
 plt.xticks(rotation=90)
 plt.plot(train.drop(drop_cols + ['target'], axis=1).columns, lgb.feature_importances_)
 plt.show()
+
