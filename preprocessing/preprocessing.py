@@ -4,7 +4,7 @@ from datetime import datetime
 # TODO:
 # - feature che tiene conto delle vendite fatte complessivamente
 # - feature che tiene conto delle vendite fatte negli ultimi 1,2,3,6 mesi
-# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra # Fatta
+# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra # Fatta by Ale
 
 def preprocessing_more(df_train: pd.DataFrame) -> pd.DataFrame:
     # first split the date into columns
@@ -60,6 +60,7 @@ def train_validation_split(train, k=0.20, same_months_test=False):
     train = train.sort_values('Date')
 
     if same_months_test:
+        # Si cerca di considerare gli stessi mesi del test
         start_date = pd.to_datetime('2017-06-29')
         end_date = pd.to_datetime('2017-12-15')
         mask_val = (train.Date >= start_date) & (train.Date <= end_date)
