@@ -66,10 +66,10 @@ def train_validation_split(train, k=0.20, same_months_test=False):
         mask_val = (train.Date >= start_date) & (train.Date <= end_date)
         val = train[mask_val]
         train = train[train.Date < start_date]
-        val_dates = val.sort_values('Date').drop_duplicates('Date').Date
+        val_dates = val.sort_values('Date').drop_duplicates('Date')['Date']
 
     else:
-        train_dates = train['Date'].drop_duplicates(keep='first').values
+        train_dates = train['Date'].drop_duplicates(keep='first')
         k = int(len(train_dates) * k)
         val_dates = train_dates[-k:]
         train, val = train[~train.Date.isin(val_dates)], train[train.Date.isin(val_dates)]

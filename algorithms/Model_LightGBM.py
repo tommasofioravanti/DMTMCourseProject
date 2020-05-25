@@ -5,7 +5,10 @@ from sklearn.preprocessing import LabelEncoder
 from lightgbm import LGBMRegressor
 import matplotlib.pyplot as plt
 
-from preprocessing.preprocessing import convert_date, inverse_interpolation
+import sys
+sys.path.append('.')
+
+from preprocessing.preprocessing import convert_date, inverse_interpolation, train_validation_split
 from metrics.MAPE import MAPE
 from features.exponential_moving_average import exponential_weighted_moving_average
 from features.moving_average import moving_average
@@ -43,9 +46,10 @@ def add_all_features(df):
     return df
 
 
-# The log function essentially de-emphasizes very large values.
-# It is more easier for the model to predict correctly if the distribution is not that right-skewed which is
-# corrected by modelling log(sales) than sales.
+"""The log function essentially de-emphasizes very large values.
+It is more easier for the model to predict correctly if the distribution is not that right-skewed which is
+corrected by modelling log(sales) than sales."""
+
 df['target'] = np.log1p(df.target.values)
 df['sales w-1'] = np.log1p(df['sales w-1'].values)
 
@@ -57,34 +61,56 @@ train = df[~df.target.isna()]
 
 # Train-Validation split
 val_sku = list(set(train[train.scope==1].sku))
-
-## Get the last k % of the last dates
-train_dates = train.sort_values('Date').drop_duplicates('Date', keep='first').Date.values
-k = int(np.floor(len(train_dates) *  0.20))
-val_dates = train_dates[-k:]
-mask = train.Date.isin(val_dates)
-
-val = train[mask]
-train_ = train[~mask]
+train, val, val_dates = train_validation_split(train)
 
 # Model
-X_train = train_.drop(['target', 'scope', 'Date'], axis=1)
-y_train = train_.target
+predictions = []
+lgb = LGBMRegressor(metric='mape')
+drop_cols = ['scope', 'Date']
 
-X_val = val.drop(['target', 'scope', 'Date'], axis=1)
+for d in val_dates:
+    print(f'Prediction for week: {str(d.year) + "-" + str(d.month) + "-" + str(d.day) }')
+
+    X_train = train.drop(['target'], axis=1)
+    y_train = train.target
+
+    val_week = val[val.Date == d]
+    X_val = val_week.drop(['target'], axis=1)
+    y_val = val_week.target
+
+    X_train = X_train.drop(drop_cols, axis=1)
+    X_val = X_val.drop(drop_cols, axis=1)
+
+    lgb.fit(X_train, y_train, categorical_feature=['sku', 'pack', 'brand'])
+    predictions.append(lgb.predict(X_val))
+
+    train = pd.concat([train, val_week])
+
+
+"""# Model
+drop_cols = ['scope', 'Date']
+X_train = train.drop(['target'], axis=1)
+y_train = train.target
+
+X_val = val.drop(['target'], axis=1)
 y_val = val.target
+
+X_train = X_train.drop(drop_cols, axis=1)
+X_val = X_val.drop(drop_cols, axis=1)
 
 lgb = LGBMRegressor(metric='mape')
 
 lgb.fit(X_train, y_train, categorical_feature=['sku', 'pack', 'brand'])
 predictions = lgb.predict(X_val)
+"""
 
-mape = MAPE(y_val, predictions)
+predictions = [p for x in predictions for p in x ]
+mape = MAPE(val.target, predictions)
 print(f'MAPE={mape}')
 
 
 # Plot Feature Importance
 plt.figure(figsize=(8,5))
 plt.xticks(rotation=90)
-plt.plot(train_.drop(['Date','scope', 'target'], axis=1).columns, lgb.feature_importances_)
+plt.plot(train.drop(drop_cols + ['target'], axis=1).columns, lgb.feature_importances_)
 plt.show()
