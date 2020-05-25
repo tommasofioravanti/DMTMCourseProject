@@ -16,11 +16,12 @@ from features.moving_average import moving_average
 from features.slope import slope
 from features.week_of_the_year import week_of_the_year
 from features.season import season
+from features.lag_target import lag_target
 
 train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
-useTest = True
+useTest = False
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
@@ -49,6 +50,8 @@ def add_all_features(df):
     df = moving_average(df, 20)
     _, df['increment'] = slope(df)
     df['exp_ma'] = exponential_weighted_moving_average(df, com=0.3)
+    df = lag_target(df, 25)
+    df = lag_target(df, 50)
 
     ## Date Features
     # train['year'] = train.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x:x[0]).astype(int)
