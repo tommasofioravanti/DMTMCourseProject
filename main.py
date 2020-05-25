@@ -20,10 +20,18 @@ from features.season import season
 train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
+useTest = True
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
 df = convert_date(df)
+
+if useTest:
+    df = df.sort_values('Date')
+    df_dates = df[df.target.isna()]
+    df_dates = df_dates.drop_duplicates('Date').Date
+    df.loc[df.target.isna(),'target'] = df[df.target.isna()][['Date', 'sku','sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
+
 df = df.sort_values(['sku','Date']).reset_index(drop=True)
 
 # Encoding Categorical Features
@@ -96,21 +104,26 @@ def dfs_gen(df, val_dates=None):
         df_dates = val_dates.sort_values()
     else:
         df = df.sort_values('Date')
-        df = df[df.target.isna()]
-        df_dates = df.drop_duplicates('Date').Date
+        df_dates = df[df.target.isna()]
+        df_dates = df_dates.drop_duplicates('Date').Date
 
     for d in df_dates:
         yield df[df.Date < d], df[df.Date == d]
 
-gen = dfs_gen(train, val_dates)
+
+
+if useTest:
+    gen = dfs_gen(df, df_dates)
+else:
+    gen = dfs_gen(train, val_dates)
 
 #   --------------- Model -----------------
 
 drop_cols = ['scope', 'Date', 'real_target']
 categorical_f = [x for x in categorical_f if x not in drop_cols]
 
-train = train.drop(drop_cols, axis=1)
-test = test.drop(drop_cols, axis=1)
+#train = train.drop(drop_cols, axis=1)
+#test = test.drop(drop_cols, axis=1)
 
 prediction_df = pd.DataFrame()
 
@@ -121,7 +134,8 @@ for df_train, df_test in gen:
 
     prediction_df = pd.concat([prediction_df, model_preds])
 
-
-print(f'MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction)}')
-
+if useTest:
+    print(f'MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction)}')
+else:
+    print(f'MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction)}')
 model.plot_feature_importance()
