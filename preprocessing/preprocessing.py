@@ -4,7 +4,7 @@ from datetime import datetime
 # TODO:
 # - feature che tiene conto delle vendite fatte complessivamente
 # - feature che tiene conto delle vendite fatte negli ultimi 1,2,3,6 mesi
-# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra
+# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra # Fatta
 
 def preprocessing_more(df_train: pd.DataFrame) -> pd.DataFrame:
     # first split the date into columns
@@ -54,3 +54,23 @@ def inverse_interpolation(df, date='2016-12-10'):
         df.loc[i, 'sales w-1'] = inverse_interpolation
 
     return df
+
+
+def train_validation_split(train, k=0.20, same_months_test=False):
+    train = train.sort_values('Date')
+
+    if same_months_test:
+        start_date = pd.to_datetime('2017-06-29')
+        end_date = pd.to_datetime('2017-12-15')
+        mask_val = (train.Date >= start_date) & (train.Date <= end_date)
+        val = train[mask_val]
+        train = train[train.Date < start_date]
+        val_dates = val.sort_values('Date').drop_duplicates('Date').Date
+
+    else:
+        train_dates = train['Date'].drop_duplicates(keep='first').values
+        k = int(len(train_dates) * k)
+        val_dates = train_dates[-k:]
+        train, val = train[~train.Date.isin(val_dates)], train[train.Date.isin(val_dates)]
+
+    return train, val, val_dates
