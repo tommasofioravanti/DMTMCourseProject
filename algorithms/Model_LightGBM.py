@@ -10,9 +10,10 @@ sys.path.append('.')
 
 class LightGBM(object):
 
-    def __init__(self, train, test, categorical_features, drop_columns, name=''):
+    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True):
 
-        test = test[test.scope==1]
+        if isScope:
+            test = test[test.scope==1]
 
         self.drop_columns = drop_columns
         self.df_target = test[['Date', 'sku', 'target', 'real_target']]
@@ -20,9 +21,10 @@ class LightGBM(object):
         self.X_train = train.drop(['target'] + drop_columns, axis=1)
         self.y_train = train.target
 
-        self.X_test = test
+        self.X_test = test.copy()
         #self.X_test = test.drop(['target'] + drop_columns, axis=1)
         self.y_test = test.target
+
 
         self.cat_features = categorical_features
         self.params = {'metric': 'mape'}
@@ -33,6 +35,7 @@ class LightGBM(object):
 
     def fit(self,):
         self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features)
+
 
     def predict(self,):
         self.X_test['log_prediction' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))

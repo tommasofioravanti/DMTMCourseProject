@@ -23,6 +23,7 @@ train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
 useTest = True
+useScope = True
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
@@ -102,15 +103,15 @@ _, _, val_dates = train_validation_split(train)
 
 
 
-def dfs_gen(df, val_dates=None):
+def dfs_gen(df, dates=None):
     """
     Train-Test generator
     :param df:
     :param val_dates:
     :return:
     """
-    if val_dates is not None:
-        df_dates = val_dates.sort_values()
+    if dates is not None:
+        df_dates = dates.sort_values()
     else:
         df = df.sort_values('Date')
         df_dates = df[df.target.isna()]
@@ -146,15 +147,25 @@ for df_train, df_test in tqdm(gen):
     drop_cols = drop_cols + ['cluster']
     categorical_f = [x for x in categorical_f if x not in drop_cols]
 
-    cluster_model_1 = LightGBM(df_train[df_train.cluster == 1], df_test[df_test.cluster == 1],categorical_features=categorical_f, drop_columns=drop_cols, name='_c')
+    cluster_model_1 = LightGBM(df_train[df_train.cluster == 1], df_test[df_test.cluster == 1],
+                               categorical_features=categorical_f, drop_columns=drop_cols, name='_c', isScope=useScope)
     cluster_pred_1 = cluster_model_1.run()
 
     pred_cluster = pd.concat([pred_cluster, cluster_pred_1])
 
-    cluster_model_2 = LightGBM(df_train[df_train.cluster == 2], df_test[df_test.cluster == 2],categorical_features=categorical_f, drop_columns=drop_cols, name='_c')
+    cluster_model_2 = LightGBM(df_train[df_train.cluster == 2], df_test[df_test.cluster == 2],
+                               categorical_features=categorical_f, drop_columns=drop_cols, name='_c', isScope=useScope)
     cluster_pred_2 = cluster_model_2.run()
 
     pred_cluster = pd.concat([pred_cluster, cluster_pred_2])
+
+    if not useScope:
+        cluster_model_3 = LightGBM(df_train[df_train.cluster == 3], df_test[df_test.cluster == 3],
+                                   categorical_features=categorical_f, drop_columns=drop_cols, name='_c',
+                                   isScope=useScope)
+        cluster_pred_3 = cluster_model_3.run()
+
+        pred_cluster = pd.concat([pred_cluster, cluster_pred_3])
 
 
 prediction_df = prediction_df.merge(pred_cluster, how='left', on=['Date', 'sku', 'target', 'real_target'])
