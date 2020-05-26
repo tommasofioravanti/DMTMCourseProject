@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
-from lightgbm import LGBMRegressor
-import matplotlib.pyplot as plt
 from algorithms.Model_LightGBM import LightGBM
 
 import sys
@@ -11,21 +9,15 @@ import sys
 
 from preprocessing.preprocessing import convert_date, inverse_interpolation, train_validation_split
 from metrics.MAPE import MAPE
-from features.exponential_moving_average import exponential_weighted_moving_average
-from features.moving_average import moving_average
-from features.slope import slope
-from features.week_of_the_year import week_of_the_year
-from features.season import season
-from features.lag_target import lag_target
-from features.partial_sales import partial_sales
-from features.heavy_light import heavy_light
-from features.days_to_christmas import days_to_christmas 
+
+from utils import get_weights, dfs_gen, add_all_features
 
 train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
 useTest = True
 useScope = True
+useSampleWeights = True
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
@@ -51,38 +43,6 @@ df = inverse_interpolation(df)
 
 #   --------------- Features -----------------
 
-def add_all_features(df):
-    # Features
-    df = moving_average(df, 20)
-    _, df['increment'] = slope(df)
-    df['exp_ma'] = exponential_weighted_moving_average(df, com=0.3)
-    df = lag_target(df, 25)
-    df = lag_target(df, 50)
-
-    ## Date Features
-    # train['year'] = train.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x:x[0]).astype(int)
-    df['month'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[1]).astype(int)
-    df['day'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[2]).astype(int)
-    df['year'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[0]).astype(int)
-
-    df = days_to_christmas(df)
-    df = heavy_light(df)
-    df = partial_sales(df)
-
-    # Cluster
-    cluster = pd.read_csv("dataset/cluster.csv")
-    cluster = cluster.rename(columns={'Label':'cluster', 'Sku':'sku'})
-    df = df.merge(cluster, how='left', on='sku')
-
-    df = week_of_the_year(df)
-
-    # Season
-    df = season(df)
-
-    categorical_features = ['cluster']
-    return df, categorical_features
-
-
 """The log function essentially de-emphasizes very large values.
 It is more easier for the model to predict correctly if the distribution is not that right-skewed which is
 corrected by modelling log(sales) than sales."""
@@ -106,26 +66,6 @@ test = df[df.target.isna()]
 _, _, val_dates = train_validation_split(train)
 
 
-
-def dfs_gen(df, dates=None):
-    """
-    Train-Test generator
-    :param df:
-    :param val_dates:
-    :return:
-    """
-    if dates is not None:
-        df_dates = dates.sort_values()
-    else:
-        df = df.sort_values('Date')
-        df_dates = df[df.target.isna()]
-        df_dates = df_dates.drop_duplicates('Date').Date
-
-    for d in df_dates:
-        yield df[df.Date < d], df[df.Date == d]
-
-
-
 if useTest:
     gen = dfs_gen(df, df_dates)
 else:
@@ -139,34 +79,42 @@ categorical_f = [x for x in categorical_f if x not in drop_cols]
 prediction_df = pd.DataFrame()
 pred_cluster = pd.DataFrame()
 
+sample_weights = None
 
 for df_train, df_test in tqdm(gen):
 
-    model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, isScope=useScope)
+    if useSampleWeights:
+        sample_weights = get_weights(df_train)
+    model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, isScope=useScope,
+                     sample_weights=sample_weights)
     model_preds = model.run()
 
     prediction_df = pd.concat([prediction_df, model_preds])
 
     # ---- Predict by cluster  -----
+
+    #  -----------   Cluster 1
     drop_cols = drop_cols + ['cluster']
     categorical_f = [x for x in categorical_f if x not in drop_cols]
 
     cluster_model_1 = LightGBM(df_train[df_train.cluster == 1], df_test[df_test.cluster == 1],
-                               categorical_features=categorical_f, drop_columns=drop_cols, name='_c', isScope=useScope)
+                               categorical_features=categorical_f, drop_columns=drop_cols, name='_c', isScope=useScope,)
     cluster_pred_1 = cluster_model_1.run()
 
     pred_cluster = pd.concat([pred_cluster, cluster_pred_1])
 
+    #  -----------   Cluster 2
     cluster_model_2 = LightGBM(df_train[df_train.cluster == 2], df_test[df_test.cluster == 2],
-                               categorical_features=categorical_f, drop_columns=drop_cols, name='_c', isScope=useScope)
+                               categorical_features=categorical_f, drop_columns=drop_cols, name='_c', isScope=useScope,)
     cluster_pred_2 = cluster_model_2.run()
 
     pred_cluster = pd.concat([pred_cluster, cluster_pred_2])
 
     if not useScope:
+        #  -----------   Cluster 3
         cluster_model_3 = LightGBM(df_train[df_train.cluster == 3], df_test[df_test.cluster == 3],
                                    categorical_features=categorical_f, drop_columns=drop_cols, name='_c',
-                                   isScope=useScope)
+                                   isScope=useScope,)
         cluster_pred_3 = cluster_model_3.run()
 
         pred_cluster = pd.concat([pred_cluster, cluster_pred_3])

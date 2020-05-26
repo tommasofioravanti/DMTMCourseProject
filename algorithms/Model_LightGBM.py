@@ -10,7 +10,7 @@ sys.path.append('.')
 
 class LightGBM(object):
 
-    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True):
+    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None):
 
         if isScope:
             test = test[test.scope==1]
@@ -27,14 +27,15 @@ class LightGBM(object):
 
 
         self.cat_features = categorical_features
-        self.params = {'metric': 'mape'}
+        self.params = {'metric': 'mape', 'verbose':-1}
 
         self.model = LGBMRegressor(**self.params)
 
         self.name = name
+        self.sample_weights = sample_weights
 
     def fit(self,):
-        self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features)
+        self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features, sample_weight=self.sample_weights)
 
 
     def predict(self,):
