@@ -6,11 +6,11 @@ import sys
 sys.path.append('.')
 
 from features.days_to_christmas import days_to_christmas 
-from preprocessing.preprocessing_more import preprocessing_more
+from preprocessing.preprocessing import preprocessing_more
 from metrics.MAPE import MAPE
 
 # preprocessing
-df_train = pd.read_csv('dataset/train.csv')
+df_train = pd.read_csv('dataset/original/train.csv')
 df_train = preprocessing_more(df_train)
 
 # add features
@@ -25,7 +25,7 @@ X_train, X_test, y_train, y_test = train_test_split(
                                         )
 
 # init model
-model = lgb.LGBMRegressor()
+model = lgb.LGBMRegressor(metric='mape')
 
 # model fitting
 model.fit(

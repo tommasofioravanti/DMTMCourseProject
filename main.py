@@ -17,11 +17,12 @@ from features.slope import slope
 from features.week_of_the_year import week_of_the_year
 from features.season import season
 from features.lag_target import lag_target
+from features.days_to_christmas import days_to_christmas 
 
 train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
-useTest = False
+useTest = True
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
@@ -59,6 +60,9 @@ def add_all_features(df):
     # train['year'] = train.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x:x[0]).astype(int)
     df['month'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[1]).astype(int)
     df['day'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[2]).astype(int)
+    df['year'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[0]).astype(int)
+
+    df = days_to_christmas(df)
 
     # Cluster
     cluster = pd.read_csv("dataset/cluster.csv")
