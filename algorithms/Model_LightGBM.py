@@ -10,9 +10,10 @@ sys.path.append('.')
 
 class LightGBM(object):
 
-    def __init__(self, train, test, categorical_features, drop_columns):
+    def __init__(self, train, test, categorical_features, drop_columns, name=''):
 
         test = test[test.scope==1]
+
         self.drop_columns = drop_columns
         self.df_target = test[['Date', 'sku', 'target', 'real_target']]
 
@@ -28,24 +29,28 @@ class LightGBM(object):
 
         self.model = LGBMRegressor(**self.params)
 
+        self.name = name
 
     def fit(self,):
         self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features)
 
     def predict(self,):
-        self.X_test['log_prediction'] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
-        self.df_target = self.df_target.merge(self.X_test[['Date', 'sku', 'log_prediction']], how='left', on=['Date', 'sku'])
+        self.X_test['log_prediction' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
 
-        self.df_target['prediction'] = np.expm1(self.df_target.log_prediction)
+        self.df_target = self.df_target.merge(self.X_test[['Date', 'sku', 'log_prediction' + self.name]], how='left', on=['Date', 'sku'])
+        self.df_target['prediction' + self.name] = np.expm1(self.df_target['log_prediction' + self.name])
+
+        self.X_test = self.X_test.drop('log_prediction' + self.name, axis=1)
         return self.df_target
 
     #def  compute_mape(self):
     #    predictions = np.expm1(self.predictions)
     #    print(f'Day {d}     MAPE={MAPE(self.real_target, predictions)}')
 
-    def plot_feature_importance(self):
+    def plot_feature_importance(self, plot_title):
         plt.figure(figsize=(8, 5))
         plt.xticks(rotation=90)
+        plt.title(plot_title)
         plt.plot(self.X_train.columns, self.model.feature_importances_)
         plt.show()
 

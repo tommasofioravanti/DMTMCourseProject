@@ -31,6 +31,8 @@ if useTest:
     df = df.sort_values('Date')
     df_dates = df[df.target.isna()]
     df_dates = df_dates.drop_duplicates('Date').Date
+
+    # Riga da RIMUOVERE PRIMA DELLA CONSEGNA
     df.loc[df.target.isna(),'target'] = df[df.target.isna()][['Date', 'sku','sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
 
 df = df.sort_values(['sku','Date']).reset_index(drop=True)
@@ -125,20 +127,53 @@ else:
 drop_cols = ['scope', 'Date', 'real_target']
 categorical_f = [x for x in categorical_f if x not in drop_cols]
 
-#train = train.drop(drop_cols, axis=1)
-#test = test.drop(drop_cols, axis=1)
-
 prediction_df = pd.DataFrame()
+pred_cluster = pd.DataFrame()
 
-for df_train, df_test in gen:
 
-    model = LightGBM(df_train, df_test, categorical_features=categorical_f ,drop_columns=drop_cols, )
+for df_train, df_test in tqdm(gen):
+
+    model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, )
     model_preds = model.run()
 
     prediction_df = pd.concat([prediction_df, model_preds])
 
+    # ---- Predict by cluster  -----
+    drop_cols = drop_cols + ['cluster']
+    categorical_f = [x for x in categorical_f if x not in drop_cols]
+
+    cluster_model_1 = LightGBM(df_train[df_train.cluster == 1], df_test[df_test.cluster == 1],categorical_features=categorical_f, drop_columns=drop_cols, name='_c')
+    cluster_pred_1 = cluster_model_1.run()
+
+    pred_cluster = pd.concat([pred_cluster, cluster_pred_1])
+
+    cluster_model_2 = LightGBM(df_train[df_train.cluster == 2], df_test[df_test.cluster == 2],categorical_features=categorical_f, drop_columns=drop_cols, name='_c')
+    cluster_pred_2 = cluster_model_2.run()
+
+    pred_cluster = pd.concat([pred_cluster, cluster_pred_2])
+
+
+prediction_df = prediction_df.merge(pred_cluster, how='left', on=['Date', 'sku', 'target', 'real_target'])
+# weighted mean log_predictions
+res = []
+for l, l_c in tqdm(zip(prediction_df.log_prediction, prediction_df.log_prediction_c)):
+    final_pred = (0.4 * l + 0.6 * l_c)
+    res.append(final_pred)
+
+prediction_df['final_pred'] = np.expm1(res)
+
+
 if useTest:
-    print(f'MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction)}')
+    print(f'Standard MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction)}')
+    print(f'Cluster MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction_c)}')
+    print(f'Ensemble MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].final_pred)}')
+
+
 else:
-    print(f'MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction)}')
-model.plot_feature_importance()
+    print(f'Standard MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction)}')
+    print(f'Cluster MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction_c)}')
+    print(f'Ensemble MAPE = {MAPE(prediction_df.real_target, prediction_df.final_pred)}')
+
+model.plot_feature_importance('Standard')
+cluster_model_1.plot_feature_importance('Cluster 1')
+cluster_model_2.plot_feature_importance('Cluster 2')
