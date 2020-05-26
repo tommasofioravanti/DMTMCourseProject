@@ -142,7 +142,7 @@ pred_cluster = pd.DataFrame()
 
 for df_train, df_test in tqdm(gen):
 
-    model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, )
+    model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, isScope=useScope)
     model_preds = model.run()
 
     prediction_df = pd.concat([prediction_df, model_preds])
@@ -196,3 +196,6 @@ else:
 model.plot_feature_importance('Standard')
 cluster_model_1.plot_feature_importance('Cluster 1')
 cluster_model_2.plot_feature_importance('Cluster 2')
+
+if not useScope:
+    cluster_model_3.plot_feature_importance('Cluster 3')
