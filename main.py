@@ -17,6 +17,8 @@ from features.slope import slope
 from features.week_of_the_year import week_of_the_year
 from features.season import season
 from features.lag_target import lag_target
+from features.partial_sales import partial_sales
+from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas 
 
 train = pd.read_csv("dataset/original/train.csv")
@@ -64,6 +66,8 @@ def add_all_features(df):
     df['year'] = df.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x: x[0]).astype(int)
 
     df = days_to_christmas(df)
+    df = heavy_light(df)
+    df = partial_sales(df)
 
     # Cluster
     cluster = pd.read_csv("dataset/cluster.csv")
@@ -129,7 +133,7 @@ else:
 
 #   --------------- Model -----------------
 
-drop_cols = ['scope', 'Date', 'real_target']
+drop_cols = ['scope', 'Date', 'real_target','pack', 'brand', 'size (GM)']
 categorical_f = [x for x in categorical_f if x not in drop_cols]
 
 prediction_df = pd.DataFrame()

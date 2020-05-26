@@ -4,3 +4,4 @@ dataset/.DS_Store
 *.pyc
 *checkpoint.ipynb
 *.ipynb_checkpoints
+.vscode/settings.json
