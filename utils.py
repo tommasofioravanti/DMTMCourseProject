@@ -10,6 +10,7 @@ from features.lag_target import lag_target
 from features.partial_sales import partial_sales
 from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas
+from features.tot_price import tot_price_per_wk
 
 
 def dfs_gen(df, dates=None):
@@ -58,6 +59,9 @@ def add_all_features(df):
 
     # Season
     df = season(df)
+
+    #Tot_price_wk
+    df=tot_price_per_wk(df)
 
     categorical_features = ['cluster']
     return df, categorical_features
