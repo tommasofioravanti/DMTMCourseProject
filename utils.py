@@ -26,6 +26,7 @@ def dfs_gen(df, dates=None):
         df_dates = df[df.target.isna()]
         df_dates = df_dates.drop_duplicates('Date').Date
 
+    df = df.sort_values(['sku','Date'])
     for d in df_dates:
         yield df[df.Date < d], df[df.Date == d]
 
@@ -62,20 +63,35 @@ def add_all_features(df):
     return df, categorical_features
 
 
+def get_weights(train, type=0):
+    """
+    Sample Weights
+    :param train:
+    :param type: integer that define the generation of the sample weights
+    :return:
+    """
+    if type==0:                 # Si assegna un peso ai samples in base al target del sample e alla media dei target di quello sku
+        weights = []
+        sum_dict = {}
+        for s, t in zip(train.sku,  train.target):
+            if s in sum_dict:
+                target_sum = sum_dict[s]
+            else:
+                target_arr = train[train.sku == s].target.values
+                ones = np.ones(target_arr.shape[0])
+                target_arr = np.divide(ones, target_arr)
+                target_sum = np.sum(target_arr)
+                sum_dict[s] = target_sum
+            weights.append((1/t)/target_sum)
+        return weights
 
-
-def get_weights(train):
-    weights = []
-    sum_dict = {}
-    for s, t in zip(train.sku,  train.target):
-        if s in sum_dict:
-            target_sum = sum_dict[s]
-        else:
-            target_arr = train[train.sku == s].target.values
-            ones = np.ones(target_arr.shape[0])
-            target_arr = np.divide(ones, target_arr)
-            target_sum = np.sum(target_arr)
-            sum_dict[s] = target_sum
-        weights.append((1/t)/target_sum)
-    return weights
-
+    elif type==1:               # Si cerca di pesare di più gli ultimi samples [temporalmente]
+        df = train.copy()
+        df['position'] = np.ones(df.shape[0], dtype='int')
+        df['position'] = df[['Date', 'sku', 'position']].groupby(['sku']).cumsum()
+        df = df.sort_values(['sku', 'Date'])
+        w = []
+        for s in set(df.sku):
+            w.append(df[df.sku == s]['position'].values / 100)
+        w = [item for x in w for item in x]
+        return w

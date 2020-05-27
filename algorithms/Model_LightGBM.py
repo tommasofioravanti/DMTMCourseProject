@@ -27,7 +27,22 @@ class LightGBM(object):
 
 
         self.cat_features = categorical_features
-        self.params = {'metric': 'mape', 'verbose':-1}
+        self.params = {'metric': 'mape',
+                       'verbose':-1,
+                       'boosting_type':'gbdt',
+                        'num_leaves':31,
+                        'max_depth':- 1,
+                        'learning_rate':0.1,
+                       'n_estimators':100,
+                       'min_split_gain':0.0,
+                       'subsample':1.0,
+                       'subsample_freq':0,
+                       'colsample_bytree':1.0,
+                       'reg_alpha':0.0,
+                       'reg_lambda':0.0,
+                       'random_state':None,
+                       'silent':True,
+                       'importance_type':'split',}
 
         self.model = LGBMRegressor(**self.params)
 
@@ -40,12 +55,9 @@ class LightGBM(object):
 
     def predict(self,):
         self.X_test['log_prediction' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
+        self.X_test['prediction' + self.name] = np.expm1(self.X_test['log_prediction'+ self.name])
 
-        self.df_target = self.df_target.merge(self.X_test[['Date', 'sku', 'log_prediction' + self.name]], how='left', on=['Date', 'sku'])
-        self.df_target['prediction' + self.name] = np.expm1(self.df_target['log_prediction' + self.name])
-
-        self.X_test = self.X_test.drop('log_prediction' + self.name, axis=1)
-        return self.df_target
+        return self.X_test[['Date', 'sku', 'target', 'real_target' ,'log_prediction'+ self.name, 'prediction'+ self.name]]
 
     #def  compute_mape(self):
     #    predictions = np.expm1(self.predictions)

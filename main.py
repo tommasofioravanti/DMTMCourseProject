@@ -31,6 +31,7 @@ if useTest:
     # Riga da RIMUOVERE PRIMA DELLA CONSEGNA
     df.loc[df.target.isna(),'target'] = df[df.target.isna()][['Date', 'sku','sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
 
+
 df = df.sort_values(['sku','Date']).reset_index(drop=True)
 
 # Encoding Categorical Features
@@ -84,7 +85,8 @@ sample_weights = None
 for df_train, df_test in tqdm(gen):
 
     if useSampleWeights:
-        sample_weights = get_weights(df_train)
+        sample_weights = get_weights(df_train, type=1)
+
     model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, isScope=useScope,
                      sample_weights=sample_weights)
     model_preds = model.run()
@@ -118,6 +120,7 @@ for df_train, df_test in tqdm(gen):
         cluster_pred_3 = cluster_model_3.run()
 
         pred_cluster = pd.concat([pred_cluster, cluster_pred_3])
+
 
 
 prediction_df = prediction_df.merge(pred_cluster, how='left', on=['Date', 'sku', 'target', 'real_target'])
