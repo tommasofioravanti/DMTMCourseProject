@@ -79,7 +79,7 @@ else:
 
 #   --------------- Model -----------------
 
-drop_cols = ['scope', 'Date', 'real_target','pack', 'brand', 'size (GM)']
+drop_cols = ['scope', 'Date', 'real_target','pack', 'size (GM)']
 categorical_f = [x for x in categorical_f if x not in drop_cols]
 
 prediction_df = pd.DataFrame()

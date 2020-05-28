@@ -11,6 +11,7 @@ from features.partial_sales import partial_sales
 from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas
 from features.tot_price import tot_price_per_wk
+from features.pos_lagged import pos_lagged
 
 
 def dfs_gen(df, dates=None):
@@ -49,6 +50,7 @@ def add_all_features(df):
     df = days_to_christmas(df)
     df = heavy_light(df)
     df = partial_sales(df)
+    df = pos_lagged(df)
 
     # Cluster
     cluster = pd.read_csv("dataset/cluster.csv")
