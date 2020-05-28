@@ -10,15 +10,19 @@ import sys
 from preprocessing.preprocessing import convert_date, inverse_interpolation, train_validation_split
 from metrics.MAPE import MAPE
 
-from utils import get_weights, dfs_gen, add_all_features, prediction_weights
+from utils import get_weights, dfs_gen, add_all_features
 
 train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
 useTest = True
 useScope = True
-isEvaluation = False
+isEvaluation = True
 useSampleWeights, weights_type = True, 0
+
+if isEvaluation:
+    useTest = False
+    useScope = False
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
@@ -126,33 +130,34 @@ for df_train, df_test in tqdm(gen):
         pred_cluster = pd.concat([pred_cluster, cluster_pred_3])
 
 
-# Merge Cluster Predictions with Standard LightGBM Predictions
-prediction_df = prediction_df.merge(pred_cluster, how='left', on=['Date', 'sku', 'target', 'real_target'])
+if not isEvaluation:
+    # Merge Cluster Predictions with Standard LightGBM Predictions
+    prediction_df = prediction_df.merge(pred_cluster, how='left', on=['Date', 'sku', 'target', 'real_target'])
 
-# Weighted Mean log_predictions
-res = []
-for l, l_c in tqdm(zip(prediction_df.log_prediction, prediction_df.log_prediction_c)):
-    final_pred = (0.4 * l + 0.6 * l_c)
-    res.append(final_pred)
+    # Weighted Mean log_predictions
+    res = []
+    for l, l_c in tqdm(zip(prediction_df.log_prediction, prediction_df.log_prediction_c)):
+        final_pred = (0.4 * l + 0.6 * l_c)
+        res.append(final_pred)
 
-prediction_df['final_pred'] = np.expm1(res)
-
-
-if useTest:
-    print(f'Standard MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction)}')
-    print(f'Cluster MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction_c)}')
-    print(f'Ensemble MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].final_pred)}')
+    prediction_df['final_pred'] = np.expm1(res)
 
 
-else:
-    print(f'Standard MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction)}')
-    print(f'Cluster MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction_c)}')
-    print(f'Ensemble MAPE = {MAPE(prediction_df.real_target, prediction_df.final_pred)}')
+    if useTest:
+        print(f'Standard MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction)}')
+        print(f'Cluster MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].prediction_c)}')
+        print(f'Ensemble MAPE = {MAPE(prediction_df[prediction_df.Date.isin(df_dates[:-1])].real_target,prediction_df[prediction_df.Date.isin(df_dates[:-1])].final_pred)}')
 
-model.plot_feature_importance('Standard')
 
-cluster_model_1.plot_feature_importance('Cluster 1')
-cluster_model_2.plot_feature_importance('Cluster 2')
+    else:
+        print(f'Standard MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction)}')
+        print(f'Cluster MAPE = {MAPE(prediction_df.real_target, prediction_df.prediction_c)}')
+        print(f'Ensemble MAPE = {MAPE(prediction_df.real_target, prediction_df.final_pred)}')
 
-if not useScope:
-    cluster_model_3.plot_feature_importance('Cluster 3')
+    model.plot_feature_importance('Standard')
+
+    cluster_model_1.plot_feature_importance('Cluster 1')
+    cluster_model_2.plot_feature_importance('Cluster 2')
+
+    if not useScope:
+        cluster_model_3.plot_feature_importance('Cluster 3')
