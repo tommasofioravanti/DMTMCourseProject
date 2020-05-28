@@ -27,7 +27,7 @@ def dfs_gen(df, dates=None):
         df_dates = df[df.target.isna()]
         df_dates = df_dates.drop_duplicates('Date').Date
 
-    df = df.sort_values(['sku','Date'])
+    df = df.sort_values(['sku','Date']).reset_index(drop=True)
     for d in df_dates:
         yield df[df.Date < d], df[df.Date == d]
 

@@ -16,7 +16,6 @@ class LightGBM(object):
             test = test[test.scope==1]
 
         self.drop_columns = drop_columns
-        self.df_target = test[['Date', 'sku', 'target', 'real_target']]
 
         self.X_train = train.drop(['target'] + drop_columns, axis=1)
         self.y_train = train.target
@@ -29,7 +28,7 @@ class LightGBM(object):
         self.cat_features = categorical_features
         self.params = {
                        # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
-                       #'objective': 'mape',  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
+                       'objective': wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
                        'verbose':-1,
                        'boosting_type':'gbdt',
                         'num_leaves':31,
@@ -118,10 +117,27 @@ def wmape_train_(y_true, y_pred):
 
 
 def wmape_train_(y_true, y_pred):
+    """
+    IMPORTANTE: sortare prima gli elementi del df per ('sku', 'Date'): df.sort_values(['sku','Date']
+
+    Give less importance to previous [in time] values, exponentially
+    :param y_true:
+    :param y_pred:
+    :return:
+    """
+
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
-    grad = -100*((y_true - y_pred)/y_true)
-    hess = 100/(y_true)
+
+    N = int(y_true.shape[0] / 43)
+    weight = np.arange(y_true.shape[0])
+    weight = weight % N
+    weight = weight / N
+    grad = -100*((y_true - y_pred)/y_true) * (np.exp(weight))
+    hess = 100/(y_true) * (np.exp(weight))
+
+    #grad = -100 * ((y_true - y_pred) / y_true)
+    #hess = 100 / (y_true)
     return grad, hess
 
 def huber_approx_obj(y_true, y_pred):
