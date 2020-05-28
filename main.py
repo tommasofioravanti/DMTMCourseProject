@@ -17,7 +17,7 @@ test = pd.read_csv("dataset/original/x_test.csv")
 
 useTest = True
 useScope = True
-isEvaluation = True
+isEvaluation = False
 useSampleWeights, weights_type = True, 0
 
 if isEvaluation:
@@ -89,7 +89,7 @@ sample_weights = None
 
 for df_train, df_test in tqdm(gen):
 
-    if useSampleWeights and not weights_type == 2:
+    if useSampleWeights:
         sample_weights = get_weights(df_train, type=weights_type)
 
     model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, isScope=useScope,
@@ -98,8 +98,6 @@ for df_train, df_test in tqdm(gen):
 
     prediction_df = pd.concat([prediction_df, model_preds])
 
-    if useSampleWeights and weights_type == 2:
-        sample_weights = prediction_weights(df_train.shape[0], model_preds.copy(), sample_weights)
 
     # ---- Predict by cluster  -----
 
