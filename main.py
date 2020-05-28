@@ -10,14 +10,15 @@ import sys
 from preprocessing.preprocessing import convert_date, inverse_interpolation, train_validation_split
 from metrics.MAPE import MAPE
 
-from utils import get_weights, dfs_gen, add_all_features
+from utils import get_weights, dfs_gen, add_all_features, prediction_weights
 
 train = pd.read_csv("dataset/original/train.csv")
 test = pd.read_csv("dataset/original/x_test.csv")
 
 useTest = True
 useScope = True
-useSampleWeights = True
+isEvaluation = False
+useSampleWeights, weights_type = True, 0
 #   --------------- Preprocessing -----------------
 
 df = pd.concat([train, test])
@@ -84,14 +85,17 @@ sample_weights = None
 
 for df_train, df_test in tqdm(gen):
 
-    if useSampleWeights:
-        sample_weights = get_weights(df_train, type=1)
+    if useSampleWeights and not weights_type == 2:
+        sample_weights = get_weights(df_train, type=weights_type)
 
     model = LightGBM(df_train, df_test, categorical_features=categorical_f, drop_columns=drop_cols, isScope=useScope,
-                     sample_weights=sample_weights)
+                     sample_weights=sample_weights, evaluation=isEvaluation)
     model_preds = model.run()
 
     prediction_df = pd.concat([prediction_df, model_preds])
+
+    if useSampleWeights and weights_type == 2:
+        sample_weights = prediction_weights(df_train.shape[0], model_preds.copy(), sample_weights)
 
     # ---- Predict by cluster  -----
 
@@ -122,9 +126,10 @@ for df_train, df_test in tqdm(gen):
         pred_cluster = pd.concat([pred_cluster, cluster_pred_3])
 
 
-
+# Merge Cluster Predictions with Standard LightGBM Predictions
 prediction_df = prediction_df.merge(pred_cluster, how='left', on=['Date', 'sku', 'target', 'real_target'])
-# weighted mean log_predictions
+
+# Weighted Mean log_predictions
 res = []
 for l, l_c in tqdm(zip(prediction_df.log_prediction, prediction_df.log_prediction_c)):
     final_pred = (0.4 * l + 0.6 * l_c)
@@ -145,6 +150,7 @@ else:
     print(f'Ensemble MAPE = {MAPE(prediction_df.real_target, prediction_df.final_pred)}')
 
 model.plot_feature_importance('Standard')
+
 cluster_model_1.plot_feature_importance('Cluster 1')
 cluster_model_2.plot_feature_importance('Cluster 2')
 

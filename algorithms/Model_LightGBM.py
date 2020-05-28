@@ -10,7 +10,7 @@ sys.path.append('.')
 
 class LightGBM(object):
 
-    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None):
+    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None, evaluation=False):
 
         if isScope:
             test = test[test.scope==1]
@@ -27,7 +27,9 @@ class LightGBM(object):
 
 
         self.cat_features = categorical_features
-        self.params = {'metric': 'mape',
+        self.params = {
+                       # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
+                       #'objective': 'mape',  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
                        'verbose':-1,
                        'boosting_type':'gbdt',
                         'num_leaves':31,
@@ -49,15 +51,22 @@ class LightGBM(object):
         self.name = name
         self.sample_weights = sample_weights
 
+        self.evaluation = evaluation
+
     def fit(self,):
-        self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features, sample_weight=self.sample_weights)
+        if self.evaluation:
+            self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features,
+                           sample_weight=self.sample_weights, eval_set=[(self.X_test.drop(['target'] + self.drop_columns, axis=1), self.y_test)],
+                           verbose=True, early_stopping_rounds=10, eval_metric=wmape_val_)
+        else:
+            self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features, sample_weight=self.sample_weights)
 
 
     def predict(self,):
         self.X_test['log_prediction' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
-        self.X_test['prediction' + self.name] = np.expm1(self.X_test['log_prediction'+ self.name])
+        self.X_test['prediction' + self.name] = np.expm1(self.X_test['log_prediction' + self.name])
 
-        return self.X_test[['Date', 'sku', 'target', 'real_target' ,'log_prediction'+ self.name, 'prediction'+ self.name]]
+        return self.X_test[['Date', 'sku', 'target', 'real_target', 'log_prediction' + self.name, 'prediction' + self.name]]
 
     #def  compute_mape(self):
     #    predictions = np.expm1(self.predictions)
@@ -71,7 +80,62 @@ class LightGBM(object):
         plt.show()
 
     def run(self):
-        self.fit()
-        return self.predict()
+        if self.evaluation:
+            self.fit()
+        else:
+            self.fit()
+            return self.predict()
         #self.compute_mape()
         #self.plot_feature_importance()
+
+    def get_model(self):
+        return self.model
+
+
+def wmape_val_(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    y_true_sum = sum(y_true)
+    residual = (sum((abs(y_true - y_pred) / y_true) * (y_true / y_true_sum) * 100) / y_true.shape[0]).astype("float")
+    return "wmape", residual, False
+
+
+"""
+def wmape_train_(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    residual = (y_true - y_pred).astype("float")
+
+    #y_true_sum = sum(y_true)
+    N = y_pred.shape[0]
+    gradient = (1 / y_true) * 100 
+    grad = np.where(residual < 0, gradient, -gradient)
+    grad[residual == 0] = 0
+    hess = 100/(y_true)
+    return grad, hess
+"""
+
+
+def wmape_train_(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    grad = -100*((y_true - y_pred)/y_true)
+    hess = 100/(y_true)
+    return grad, hess
+
+def huber_approx_obj(y_true, y_pred):
+    d = y_pred - y_true
+    h = 5  #h is delta in the graphic
+    scale = 1 + (d / h) ** 2
+    scale_sqrt = np.sqrt(scale)
+    grad = d / scale_sqrt
+    hess = 1 / scale / scale_sqrt
+    return grad, hess
+
+
+"""
+Ensemble MAPE = 9.386   Objective: default
+Ensemble MAPE = 9.21    Objective: huber
+Ensemble MAPE = 10.789  Objective: mape
+"""

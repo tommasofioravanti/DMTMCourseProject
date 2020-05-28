@@ -39,5 +39,5 @@ def moving_average(df, k, inverse_interpolation=True):
             if curr_idx - previous_k_idx == k + 1:
                 print(f"Exceeded: {curr_idx - previous_k_idx}")
 
-    df['moving_average'] = res
+    df['moving_average_' + str(k)] = res
     return df
