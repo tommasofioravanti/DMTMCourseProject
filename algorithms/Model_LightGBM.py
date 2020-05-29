@@ -39,7 +39,7 @@ class LightGBM(object):
                         'num_leaves':31,
                         'max_depth':- 1,
                         'learning_rate':0.1,
-                       'n_estimators':100,
+                       'n_estimators':600,
                        'min_split_gain':0.0,
                        'subsample':1.0,
                        'subsample_freq':0,

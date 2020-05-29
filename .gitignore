@@ -5,3 +5,4 @@ dataset/.DS_Store
 *checkpoint.ipynb
 *.ipynb_checkpoints
 .vscode/settings.json
+*catboost_info

@@ -18,7 +18,7 @@ test = pd.read_csv("dataset/original/x_test.csv")
 useTest = True
 useScope = True
 isEvaluation = False
-useSampleWeights, weights_type = True, 0
+useSampleWeights, weights_type = True, 2
 
 if isEvaluation:
     useTest = False

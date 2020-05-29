@@ -101,3 +101,12 @@ def get_weights(train, type=0):
             w.append(df[df.sku == s]['position'].values / 100)
         w = [item for x in w for item in x]
         return w
+    
+    elif type==2:               # Si cerca di pesare di più gli ultimi samples [temporalmente]
+        w = []
+        for s in train.scope:
+            if s==1:
+                w.append(1)
+            else:
+                w.append(5)
+        return w
