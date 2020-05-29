@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
 from algorithms.Model_CatBoost import CatBoost
+from algorithms.Model_LightGBM import LightGBM
 
 import sys
 #sys.path.append('.')
@@ -18,7 +19,7 @@ test = pd.read_csv("dataset/original/x_test.csv")
 useTest = True
 useScope = True
 isEvaluation = False
-useSampleWeights, weights_type = True, 0
+useSampleWeights, weights_type = False, 0
 
 if isEvaluation:
     useTest = False
@@ -135,7 +136,7 @@ if not isEvaluation:
     # Weighted Mean log_predictions
     res = []
     for l, l_c in tqdm(zip(prediction_df.log_prediction, prediction_df.log_prediction_c)):
-        final_pred = (0.4 * l + 0.6 * l_c)
+        final_pred = (0.55 * l + 0.45 * l_c)
         res.append(final_pred)
 
     prediction_df['final_pred'] = np.expm1(res)

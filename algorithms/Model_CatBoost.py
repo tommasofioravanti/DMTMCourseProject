@@ -40,6 +40,7 @@ class CatBoost(object):
         self.model = CatBoostRegressor(**self.params)
 
         self.name = name
+        self.sample_weights = sample_weights
 
         self.evaluation = evaluation
 
@@ -47,9 +48,9 @@ class CatBoost(object):
 
     def fit(self,):
         if self.evaluation:
-            self.model.fit(self.X_train, self.y_train, cat_features=self.cat_features)
+            self.model.fit(self.X_train, self.y_train, cat_features=self.cat_features, sample_weight=self.sample_weights)
         else:
-            self.model.fit(self.X_train, self.y_train, cat_features=self.cat_features)
+            self.model.fit(self.X_train, self.y_train, cat_features=self.cat_features, sample_weight=self.sample_weights)
 
 
     def predict(self,):

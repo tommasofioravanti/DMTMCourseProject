@@ -135,7 +135,7 @@ if not isEvaluation:
     # Weighted Mean log_predictions
     res = []
     for l, l_c in tqdm(zip(prediction_df.log_prediction, prediction_df.log_prediction_c)):
-        final_pred = (0.4 * l + 0.6 * l_c)
+        final_pred = (0.55 * l + 0.45 * l_c)
         res.append(final_pred)
 
     prediction_df['final_pred'] = np.expm1(res)
