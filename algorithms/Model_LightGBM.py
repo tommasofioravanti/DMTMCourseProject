@@ -6,7 +6,10 @@ from lightgbm import LGBMRegressor
 import matplotlib.pyplot as plt
 
 import sys
-sys.path.append('.')
+sys.path.append('../')
+
+from utils import dfs_gen, get_weights
+from preprocessing.preprocessing import train_validation_split
 
 s = None        # Global variable to define the number of different skus in the train, used in the custom objective function
 
@@ -36,7 +39,7 @@ class LightGBM(object):
                         'num_leaves':31,
                         'max_depth':- 1,
                         'learning_rate':0.1,
-                       'n_estimators':500,
+                       'n_estimators':100,
                        'min_split_gain':0.0,
                        'subsample':1.0,
                        'subsample_freq':0,
@@ -60,7 +63,7 @@ class LightGBM(object):
         if self.evaluation:
             self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features,
                            sample_weight=self.sample_weights, eval_set=[(self.X_test.drop(['target'] + self.drop_columns, axis=1), self.y_test)],
-                           verbose=True, early_stopping_rounds=10, eval_metric=wmape_val_)
+                           verbose=True, early_stopping_rounds=10, eval_metric=LightGBM.wmape_val_)
         else:
             self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features, sample_weight=self.sample_weights)
 
@@ -130,14 +133,14 @@ class LightGBM(object):
         hess = 1 / scale / scale_sqrt
         return grad, hess
 
+    @staticmethod
+    def wmape_val_(y_true, y_pred):
+        y_true = np.array(y_true)
+        y_pred = np.array(y_pred)
 
-def wmape_val_(y_true, y_pred):
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-
-    y_true_sum = sum(y_true)
-    residual = (sum((abs(y_true - y_pred) / y_true) * (y_true / y_true_sum) * 100) / y_true.shape[0]).astype("float")
-    return "wmape", residual, False
+        y_true_sum = sum(y_true)
+        residual = (sum((abs(y_true - y_pred) / y_true) * (y_true / y_true_sum) * 100) / y_true.shape[0]).astype("float")
+        return "wmape", residual, False
 
 
 """
@@ -161,3 +164,55 @@ Ensemble MAPE = 9.386   Objective: default
 Ensemble MAPE = 9.21    Objective: huber
 Ensemble MAPE = 10.789  Objective: mape
 """
+
+class LGBM_Generator(object):
+
+    def __init__(self, df, categorical_features, drop_columns, name='', isScope=True, sample_weights_type=None,
+                 evaluation=False, cluster=None, useTest=True):
+
+        if useTest:
+            df = df.sort_values('Date')
+            test_dates = df[df.Date >= '2019-06-29']
+            test_dates = test_dates.drop_duplicates('Date').Date
+            self.generator = dfs_gen(df, test_dates)
+        else:
+            train = df[~df.target.isna()]
+            _, _, val_dates = train_validation_split(train)
+            self.generator = dfs_gen(train, val_dates)
+
+        self.sample_weights_type = sample_weights_type
+        self.sample_weights = None
+
+        self.cat_features = categorical_features
+        self.drop_columns = drop_columns
+        self.name = name
+        self.isScope = isScope
+        self.evaluation = evaluation
+        self.predictions = pd.DataFrame()
+        self.cluster = cluster
+
+    def run_generator(self):
+
+        for df_train, df_test in tqdm(self.generator):
+
+            if self.sample_weights_type is not None:
+                self.sample_weights = get_weights(df_train, type=self.sample_weights_type)
+
+            if self.cluster is not None:
+                self.model = LightGBM(df_train[df_train.cluster == self.cluster], df_test[df_test.cluster == self.cluster],
+                                 categorical_features=self.cat_features,
+                                 drop_columns=self.drop_columns, isScope=self.isScope,
+                                 sample_weights=self.sample_weights, evaluation=self.evaluation, name=self.name)
+            else:
+                self.model = LightGBM(df_train, df_test, categorical_features=self.cat_features,
+                                 drop_columns=self.drop_columns, isScope=self.isScope,
+                                 sample_weights=self.sample_weights, evaluation=self.evaluation, name=self.name, )
+
+            if not self.evaluation:
+                self.predictions = pd.concat([self.predictions, self.model.run()])
+
+        #self.predictions.to_csv(f"prediction_{self.name}.csv", index=False)
+        return self.predictions
+
+    def plot_feature_importance(self, plot_title):
+        self.model.plot_feature_importance(self.name)

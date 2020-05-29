@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 from datetime import datetime
+from sklearn.preprocessing import LabelEncoder
 
 # TODO:
 # - feature che tiene conto delle vendite fatte complessivamente
@@ -75,3 +77,34 @@ def train_validation_split(train, k=0.20, same_months_test=False):
         train, val = train[~train.Date.isin(val_dates)], train[train.Date.isin(val_dates)]
 
     return train, val, val_dates
+
+
+def preprocessing(train, test, useTest=True):
+    df = pd.concat([train, test])
+    df = convert_date(df)
+
+    if useTest:
+        # Riga da RIMUOVERE PRIMA DELLA CONSEGNA
+        df.loc[df.target.isna(), 'target'] = df[df.target.isna()][['Date', 'sku', 'sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
+
+    df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
+    # Encoding Categorical Features
+    le = LabelEncoder()
+    df.pack = le.fit_transform(df.pack)
+    df.brand = le.fit_transform(df.brand)
+
+    # Impute sales w-1 NaNs in the first week
+    df = inverse_interpolation(df)
+
+    #   --------------- Features -----------------
+
+    """The log function essentially de-emphasizes very large values.
+    It is more easier for the model to predict correctly if the distribution is not that right-skewed which is
+    corrected by modelling log(sales) than sales."""
+
+    # real_values = df[['Date', 'sku', 'target']].rename(columns={'target':'real_target'})
+    df['real_target'] = df.target
+    df['target'] = np.log1p(df.target.values)
+    df['sales w-1'] = np.log1p(df['sales w-1'].values)
+
+    return df
