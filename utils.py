@@ -111,3 +111,15 @@ def get_weights(train, type=0):
             else:
                 w.append(5)
         return w
+    elif type==3:  # Si pesa di più i samples nella finestra temporale del test
+
+        w = []
+
+        for index, row in train.iterrows():
+            # print(row)
+            if (not ((str(row.Date) <= '2017-12-14') & (str(row.Date) >= '2017-06-29')) and not (
+                    (str(row.Date) <= '2018-12-14') & (str(row.Date) >= '2018-06-29'))):
+                w.append(1)
+            else:
+                w.append(10)
+        return w
