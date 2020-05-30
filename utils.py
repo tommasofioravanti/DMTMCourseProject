@@ -65,6 +65,7 @@ def add_all_features(df):
     #Tot_price_wk
     df=tot_price_per_wk(df)
 
+    #df=df.dropna() #Use this for Random Forest
     categorical_features = ['cluster']
     return df, categorical_features
 

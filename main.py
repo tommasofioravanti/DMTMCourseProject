@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
 from algorithms.Model_LightGBM import LightGBM
+from algorithms.RandomForest import RandomForest
 
 import sys
 #sys.path.append('.')
@@ -96,6 +97,8 @@ for df_train, df_test in tqdm(gen):
                      sample_weights=sample_weights, evaluation=isEvaluation)
     model_preds = model.run()
 
+    #model = RandomForest(df_train,df_test,drop_cols,isScope=useScope,sample_weights=sample_weights)
+    #model_preds=model.run()
     prediction_df = pd.concat([prediction_df, model_preds])
 
 
