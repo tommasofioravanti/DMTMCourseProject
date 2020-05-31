@@ -1,39 +1,24 @@
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
-from sklearn.preprocessing import LabelEncoder
 from lightgbm import LGBMRegressor
 import matplotlib.pyplot as plt
-
 import sys
 sys.path.append('../')
 
-from utils import dfs_gen, get_weights
-from preprocessing.preprocessing import train_validation_split
+from algorithms.Base_Model import BaseModel
 
-s = None        # Global variable to define the number of different skus in the train, used in the custom objective function
+class LightGBM(BaseModel):
 
-class LightGBM(object):
+    def __init__(self):
+        super().__init__()
 
-    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None, evaluation=False):
-        global s
+    def create(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None, evaluation=False):
+        super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
+                       name=name, isScope=isScope, sample_weights=sample_weights, evaluation=evaluation)
 
-        if isScope:
-            test = test[test.scope==1]
-
-        self.drop_columns = drop_columns
-
-        self.X_train = train.drop(['target'] + drop_columns, axis=1)
-        self.y_train = train.target
-
-        self.X_test = test.copy()
-        #self.X_test = test.drop(['target'] + drop_columns, axis=1)
-        self.y_test = test.target
-
-        self.cat_features = categorical_features
         self.params = {
                        # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
-                       'objective': LightGBM.wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
+                       'objective': BaseModel.wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
                        'verbose':-1,
                        'boosting_type':'gbdt',
                         'num_leaves':31,
@@ -48,16 +33,13 @@ class LightGBM(object):
                        'reg_lambda':0.0,
                        'random_state':None,
                        'silent':True,
-                       'importance_type':'split',}
+                       'importance_type':'split',
+                        'tree_learner':'feature',
+        }
 
         self.model = LGBMRegressor(**self.params)
+        return self
 
-        self.name = name
-        self.sample_weights = sample_weights
-
-        self.evaluation = evaluation
-
-        s = len(set(self.X_train.sku.values))
 
     def fit(self,):
         if self.evaluation:
@@ -69,14 +51,10 @@ class LightGBM(object):
 
 
     def predict(self,):
-        self.X_test['log_prediction' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
-        self.X_test['prediction' + self.name] = np.expm1(self.X_test['log_prediction' + self.name])
+        self.X_test['log_prediction_' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
+        self.X_test['prediction_' + self.name] = np.expm1(self.X_test['log_prediction_' + self.name])
 
-        return self.X_test[['Date', 'sku', 'target', 'real_target', 'log_prediction' + self.name, 'prediction' + self.name]]
-
-    #def  compute_mape(self):
-    #    predictions = np.expm1(self.predictions)
-    #    print(f'Day {d}     MAPE={MAPE(self.real_target, predictions)}')
+        return self.X_test[['Date', 'sku', 'target', 'real_target', 'log_prediction_' + self.name, 'prediction_' + self.name]]
 
     def plot_feature_importance(self, plot_title):
         plt.figure(figsize=(8, 5))
@@ -91,56 +69,9 @@ class LightGBM(object):
         else:
             self.fit()
             return self.predict()
-        #self.compute_mape()
-        #self.plot_feature_importance()
 
     def get_model(self):
         return self.model
-
-    # Custom Objective Functions
-    @staticmethod
-    def wmape_train_(y_true, y_pred):
-        """
-        IMPORTANTE: sortare prima gli elementi del df per ('sku', 'Date'): df.sort_values(['sku','Date']
-
-        Give less importance to previous [in time] values, exponentially
-        :param y_true:
-        :param y_pred:
-        :return:
-        """
-        global s
-        y_true = np.array(y_true)
-        y_pred = np.array(y_pred)
-
-        N = int(y_true.shape[0] / s)
-        weight = np.arange(y_true.shape[0])
-        weight = weight % N
-        weight = weight / N
-        grad = -100 * ((y_true - y_pred) / y_true) * (np.exp(weight))
-        hess = 100 / (y_true) * (np.exp(weight))
-
-        # grad = -100 * ((y_true - y_pred) / y_true)
-        # hess = 100 / (y_true)
-        return grad, hess
-
-    @staticmethod
-    def huber_approx_obj(y_true, y_pred):
-        d = y_pred - y_true
-        h = 5  # h is delta in the graphic
-        scale = 1 + (d / h) ** 2
-        scale_sqrt = np.sqrt(scale)
-        grad = d / scale_sqrt
-        hess = 1 / scale / scale_sqrt
-        return grad, hess
-
-    @staticmethod
-    def wmape_val_(y_true, y_pred):
-        y_true = np.array(y_true)
-        y_pred = np.array(y_pred)
-
-        y_true_sum = sum(y_true)
-        residual = (sum((abs(y_true - y_pred) / y_true) * (y_true / y_true_sum) * 100) / y_true.shape[0]).astype("float")
-        return "wmape", residual, False
 
 
 """
@@ -158,61 +89,3 @@ def wmape_train_(y_true, y_pred):
     return grad, hess
 """
 
-
-"""
-Ensemble MAPE = 9.386   Objective: default
-Ensemble MAPE = 9.21    Objective: huber
-Ensemble MAPE = 10.789  Objective: mape
-"""
-
-class LGBM_Generator(object):
-
-    def __init__(self, df, categorical_features, drop_columns, name='', isScope=True, sample_weights_type=None,
-                 evaluation=False, cluster=None, useTest=True):
-
-        if useTest:
-            df = df.sort_values('Date')
-            test_dates = df[df.Date >= '2019-06-29']
-            test_dates = test_dates.drop_duplicates('Date').Date
-            self.generator = dfs_gen(df, test_dates)
-        else:
-            train = df[~df.target.isna()]
-            _, _, val_dates = train_validation_split(train)
-            self.generator = dfs_gen(train, val_dates)
-
-        self.sample_weights_type = sample_weights_type
-        self.sample_weights = None
-
-        self.cat_features = categorical_features
-        self.drop_columns = drop_columns
-        self.name = name
-        self.isScope = isScope
-        self.evaluation = evaluation
-        self.predictions = pd.DataFrame()
-        self.cluster = cluster
-
-    def run_generator(self):
-
-        for df_train, df_test in tqdm(self.generator):
-
-            if self.sample_weights_type is not None:
-                self.sample_weights = get_weights(df_train, type=self.sample_weights_type)
-
-            if self.cluster is not None:
-                self.model = LightGBM(df_train[df_train.cluster == self.cluster], df_test[df_test.cluster == self.cluster],
-                                 categorical_features=self.cat_features,
-                                 drop_columns=self.drop_columns, isScope=self.isScope,
-                                 sample_weights=self.sample_weights, evaluation=self.evaluation, name=self.name)
-            else:
-                self.model = LightGBM(df_train, df_test, categorical_features=self.cat_features,
-                                 drop_columns=self.drop_columns, isScope=self.isScope,
-                                 sample_weights=self.sample_weights, evaluation=self.evaluation, name=self.name, )
-
-            if not self.evaluation:
-                self.predictions = pd.concat([self.predictions, self.model.run()])
-
-        #self.predictions.to_csv(f"prediction_{self.name}.csv", index=False)
-        return self.predictions
-
-    def plot_feature_importance(self, plot_title):
-        self.model.plot_feature_importance(self.name)

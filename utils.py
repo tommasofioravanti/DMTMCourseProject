@@ -14,19 +14,15 @@ from features.tot_price import tot_price_per_wk
 from features.pos_lagged import pos_lagged
 
 
-def dfs_gen(df, dates=None):
+def dfs_gen(df, dates):
     """
     Train-Test generator
     :param df:
     :param val_dates:
     :return:
     """
-    if dates is not None:
-        df_dates = dates.sort_values()
-    else:
-        df = df.sort_values('Date')
-        df_dates = df[df.target.isna()]
-        df_dates = df_dates.drop_duplicates('Date').Date
+
+    df_dates = dates.sort_values()
 
     df = df.sort_values(['sku','Date']).reset_index(drop=True)
     for d in df_dates:
@@ -67,6 +63,7 @@ def add_all_features(df):
 
     #df=df.dropna() #Use this for Random Forest
     categorical_features = ['cluster']
+
     return df, categorical_features
 
 
@@ -111,6 +108,7 @@ def get_weights(train, type=0):
             else:
                 w.append(5)
         return w
+
     elif type==3:  # Si pesa di più i samples nella finestra temporale del test
 
         w = []
