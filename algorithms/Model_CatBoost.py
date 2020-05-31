@@ -7,27 +7,19 @@ import matplotlib.pyplot as plt
 
 import sys
 sys.path.append('.')
+sys.path.append('../')
 
-s = None        # Global variable to define the number of different skus in the train, used in the custom objective function
+from algorithms.Base_Model import BaseModel
 
-class CatBoost(object):
+class CatBoost(BaseModel):
 
-    def __init__(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None, evaluation=False):
-        global s
+    def __init__(self):
+        super(CatBoost, self).__init__()
 
-        if isScope:
-            test = test[test.scope==1]
+    def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
+        super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
+                       name=name, isScope=isScope, sample_weights=sample_weights, evaluation=evaluation)
 
-        self.drop_columns = drop_columns
-
-        self.X_train = train.drop(['target'] + drop_columns, axis=1)
-        self.y_train = train.target
-
-        self.X_test = test.copy()
-        #self.X_test = test.drop(['target'] + drop_columns, axis=1)
-        self.y_test = test.target
-
-        self.cat_features = categorical_features
         self.params = {
                        # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
                     #    'objective': CatBoost.wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
@@ -39,12 +31,7 @@ class CatBoost(object):
 
         self.model = CatBoostRegressor(**self.params)
 
-        self.name = name
-        self.sample_weights = sample_weights
-
-        self.evaluation = evaluation
-
-        s = len(set(self.X_train.sku.values))
+        return self
 
     def fit(self,):
         if self.evaluation:
@@ -54,10 +41,10 @@ class CatBoost(object):
 
 
     def predict(self,):
-        self.X_test['log_prediction' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
-        self.X_test['prediction' + self.name] = np.expm1(self.X_test['log_prediction' + self.name])
+        self.X_test['log_prediction_' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
+        self.X_test['prediction_' + self.name] = np.expm1(self.X_test['log_prediction_' + self.name])
 
-        return self.X_test[['Date', 'sku', 'target', 'real_target', 'log_prediction' + self.name, 'prediction' + self.name]]
+        return self.X_test[['Date', 'sku', 'target', 'real_target', 'log_prediction_' + self.name, 'prediction_' + self.name]]
 
     def run(self):
         if self.evaluation:

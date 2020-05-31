@@ -8,7 +8,7 @@ class BaseModel(object):
     def __init__(self):
         pass
 
-    def create(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None, evaluation=False):
+    def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
         global n_sku
 
         if isScope:

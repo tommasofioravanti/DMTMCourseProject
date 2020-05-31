@@ -4,15 +4,15 @@ from lightgbm import LGBMRegressor
 import matplotlib.pyplot as plt
 import sys
 sys.path.append('../')
-
 from algorithms.Base_Model import BaseModel
+
 
 class LightGBM(BaseModel):
 
     def __init__(self):
-        super().__init__()
+        super(LightGBM, self).__init__()
 
-    def create(self, train, test, categorical_features, drop_columns, name='', isScope=True, sample_weights=None, evaluation=False):
+    def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
         super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
                        name=name, isScope=isScope, sample_weights=sample_weights, evaluation=evaluation)
 

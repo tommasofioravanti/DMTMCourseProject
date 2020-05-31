@@ -2,21 +2,17 @@ from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import matplotlib.pyplot as plt
 
+from algorithms.Base_Model import BaseModel
 
-class RandomForest(object):
 
-    def __init__(self, train, test, drop_columns, name='', isScope=True, sample_weights=None):
-        if isScope:
-            test = test[test.scope == 1]
+class RandomForest(BaseModel):
+    
+    def __init__(self):
+        super(RandomForest, self).__init__()
 
-        self.drop_columns = drop_columns + ['sku']
-
-        self.X_train = train.drop(['target'] + self.drop_columns, axis=1)
-        self.y_train = train.target
-
-        self.X_test = test.copy()
-
-        self.y_test = test.target
+    def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
+        super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
+                       name=name, isScope=isScope, sample_weights=sample_weights, evaluation=evaluation)
 
         self.params = {
             'n_estimators': 1000,
@@ -28,20 +24,17 @@ class RandomForest(object):
         }
 
         self.model = RandomForestRegressor(**self.params)
-
-        self.name = name
-        self.sample_weights = sample_weights
+        return self
 
     def fit(self, ):
         self.model.fit(self.X_train, self.y_train, sample_weight=self.sample_weights)
 
     def predict(self, ):
-        self.X_test['log_prediction' + self.name] = self.model.predict(
-            self.X_test.drop(['target'] + self.drop_columns, axis=1))
-        self.X_test['prediction' + self.name] = np.expm1(self.X_test['log_prediction' + self.name])
+        self.X_test['log_prediction_' + self.name] = self.model.predict(self.X_test.drop(['target'] + self.drop_columns, axis=1))
+        self.X_test['prediction_' + self.name] = np.expm1(self.X_test['log_prediction_' + self.name])
 
         return self.X_test[
-            ['Date', 'sku', 'target', 'real_target', 'log_prediction' + self.name, 'prediction' + self.name]]
+            ['Date', 'sku', 'target', 'real_target', 'log_prediction_' + self.name, 'prediction_' + self.name]]
 
 
     def plot_feature_importance(self, plot_title):
@@ -52,6 +45,9 @@ class RandomForest(object):
         plt.show()
 
     def run(self):
-        self.fit()
-        return self.predict()
+        if self.evaluation:
+            self.fit()
+        else:
+            self.fit()
+            return self.predict()
 
