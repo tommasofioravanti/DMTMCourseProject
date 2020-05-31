@@ -56,13 +56,14 @@ class Generator(object):
         self.cluster = cluster
         self.model = model
 
-        if isinstance(self.cluster, int):
-            self.cluster = [self.cluster]
-        elif isinstance(self.cluster, list):
-            pass
-        else:
-            import sys
-            sys.exit("Cluster is not a list nor a integer")
+        if cluster is not None:
+            if isinstance(self.cluster, int):
+                self.cluster = [self.cluster]
+            elif isinstance(self.cluster, list):
+                pass
+            else:
+                import sys
+                sys.exit("Cluster is not a list nor a integer")
 
 
     def run_generator(self, save=False):
