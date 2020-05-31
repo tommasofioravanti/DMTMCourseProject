@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
+import os
 import sys
 sys.path.append('../')
 
@@ -62,7 +63,6 @@ class Generator(object):
             elif isinstance(self.cluster, list):
                 pass
             else:
-                import sys
                 sys.exit("Cluster is not a list nor a integer")
 
 
@@ -98,7 +98,6 @@ class Generator(object):
 
 
     def save_predictions(self,):
-        import os
         path = 'dataset/prediction'
         if not os.path.isdir(path):
             os.mkdir(path)
