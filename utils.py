@@ -12,6 +12,7 @@ from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas
 from features.tot_price import tot_price_per_wk
 from features.pos_lagged import pos_lagged
+from features.Price_Sales_correlation import conc_corr
 
 
 def dfs_gen(df, dates):
@@ -60,6 +61,9 @@ def add_all_features(df):
 
     #Tot_price_wk
     df=tot_price_per_wk(df)
+
+    #Correlation Price-Sales
+    df=conc_corr(df)
 
     #df=df.dropna() #Use this for Random Forest
     categorical_features = ['cluster']
