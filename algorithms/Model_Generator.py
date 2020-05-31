@@ -107,12 +107,12 @@ class Generator(object):
             test_path = os.path.join(path, 'test')
             if not os.path.isdir(test_path):
                 os.makedirs(test_path)
-            self.predictions.to_csv(os.path.join(test_path, self.name , '_test.csv'), index=False)
+            self.predictions.to_csv(os.path.join(test_path, self.name + '_test.csv'), index=False)
         else:
             val_path = os.path.join(path, 'val')
             if not os.path.isdir(val_path):
                 os.makedirs(val_path)
-            self.predictions.to_csv(os.path.join(val_path, self.name , '_val.csv'), index=False)
+            self.predictions.to_csv(os.path.join(val_path, self.name + '_val.csv'), index=False)
 
     def plot_feature_importance(self, ):
         self.model.plot_feature_importance(self.name)
