@@ -42,10 +42,12 @@ class LightGBM(BaseModel):
 
 
     def fit(self,):
+
         if self.evaluation:
             self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features,
                            sample_weight=self.sample_weights, eval_set=[(self.X_test.drop(['target'] + self.drop_columns, axis=1), self.y_test)],
-                           verbose=True, early_stopping_rounds=10, eval_metric=LightGBM.wmape_val_)
+                           verbose=False, early_stopping_rounds=50, eval_metric=LightGBM.wmape_val_, )
+            return self.model.best_iteration_
         else:
             self.model.fit(self.X_train, self.y_train, categorical_feature=self.cat_features, sample_weight=self.sample_weights)
 
@@ -65,7 +67,7 @@ class LightGBM(BaseModel):
 
     def run(self):
         if self.evaluation:
-            self.fit()
+            return self.fit()
         else:
             self.fit()
             return self.predict()

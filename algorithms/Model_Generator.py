@@ -65,6 +65,9 @@ class Generator(object):
             else:
                 sys.exit("Cluster is not a list nor a integer")
 
+        if self.evaluation:
+            self.best_iterations = []
+
 
     def run_generator(self, save=False):
 
@@ -91,8 +94,13 @@ class Generator(object):
                 if not self.evaluation:
                     self.predictions = pd.concat([self.predictions, self.model.run()])
 
+            if self.evaluation:
+                self.best_iterations.append(self.model.run())
         if save:
             self.save_predictions()
+
+        if self.evaluation:
+            print(self.best_iterations)
 
         return self.predictions
 
