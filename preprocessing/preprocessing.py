@@ -79,12 +79,67 @@ def train_validation_split(train, k=0.20, same_months_test=False):
     return train, val, val_dates
 
 
-def preprocessing(train, test, useTest=True):
-    df = pd.concat([train, test])
-    df = convert_date(df)
+def data_augmentation(df):
+    df_2017 = df[df.Date.dt.year == 2017]
+    df_2018 = df[df.Date.dt.year == 2018]
+    df_2017['order'] = df_2017.sort_values(['sku', 'Date']).groupby('sku').cumcount()
+    df_2018['order'] = df_2018.sort_values(['sku', 'Date']).groupby('sku').cumcount()
+    res = []
+    for d in df[df.Date.dt.year == 2016].Date.drop_duplicates().values:
+        res.append(d)
+    start_date = pd.to_datetime('2016-12-10')
+    while len(res) != 52:
+        date = start_date - pd.to_timedelta(7, unit='d')
+        res.append(date)
+        start_date = date
+    res = pd.to_datetime(res)
+    res = res.sort_values()
+    res = [res] * 43
+    res = [y for x in res for y in x]
+    df_2016 = df_2017.copy()
+    df_2016 = df_2016.sort_values(['sku', 'Date'])
+    df_2016['Date'] = res
+    df_2016['order'] = df_2016.sort_values(['sku', 'Date']).groupby('sku').cumcount()
+
+    cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
+    for c in cols:
+        df_2016[c] = (df_2016[c].values + df_2018[c].values) / 2
+
+    df_dates = df[df.Date.dt.year == 2016].Date.drop_duplicates().values
+    df_2016 = df_2016.drop('order', axis=1)
+    df_2016 = df_2016.sort_values(['sku', 'Date'])
+    df = df.sort_values(['sku', 'Date'])
+
+    df_dates = df_dates[1:]
+
+    cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
+    df_2016.loc[df_2016.Date.isin(df_dates), cols] = df[df.Date.isin(df_dates)][cols].values
+
+    cols = ['price', 'target']
+    df_2016.loc[df_2016.Date == '2016-12-10', cols] = df[df.Date == '2016-12-10'][cols].values
+
+    df_2016_index = df[df.Date.dt.year == 2016].index
+    df = df.drop(df_2016_index)
+
+    df = pd.concat([df_2016, df])
+    df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
+    df['sales w-1'] = df.groupby('sku').target.shift(1)
+
+    return df
+
+
+def preprocessing(train, test, useTest=True, dataAugmentation=False):
+
+    if dataAugmentation:
+        train = data_augmentation(convert_date(train))
+        test = convert_date(test)
+        df = pd.concat([train, test])
+    else:
+        df = pd.concat([train, test])
+        df = convert_date(df)
 
     if useTest:
-        # Riga da RIMUOVERE PRIMA DELLA CONSEGNA
+        # TODO Riga da RIMUOVERE PRIMA DELLA CONSEGNA
         df.loc[df.target.isna(), 'target'] = df[df.target.isna()][['Date', 'sku', 'sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
 
     df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
@@ -94,7 +149,9 @@ def preprocessing(train, test, useTest=True):
     df.brand = le.fit_transform(df.brand)
 
     # Impute sales w-1 NaNs in the first week
-    df = inverse_interpolation(df)
+    first_date = df.Date.sort_values().drop_duplicates().values
+    first_date = first_date[0]
+    df = inverse_interpolation(df, date=first_date)
 
     #   --------------- Features -----------------
 

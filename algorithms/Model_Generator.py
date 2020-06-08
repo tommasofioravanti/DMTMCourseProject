@@ -13,7 +13,7 @@ from metrics.MAPE import MAPE
 class Generator(object):
 
     def __init__(self, df, model, categorical_features, drop_columns, name='', isScope=True, sample_weights_type=None,
-                 evaluation=False, cluster=None, useTest=True, completeCV=False):
+                 evaluation=False, cluster=None, useTest=True, completeCV=False, dataAugmentation=False):
         """
 
         :param df: complete dataframe [train + test]
@@ -39,7 +39,10 @@ class Generator(object):
         else:
             train = df[~df.target.isna()]
             if completeCV:
-                dates = train.Date.sort_values().drop_duplicates(keep='first')
+                if dataAugmentation:
+                    dates = train[train.Date >= '2016-12-10'].Date.sort_values().drop_duplicates(keep='first')
+                else:
+                    dates = train.Date.sort_values().drop_duplicates(keep='first')
                 val_dates = dates[1:]
             else:
                 _, _, val_dates = train_validation_split(train)

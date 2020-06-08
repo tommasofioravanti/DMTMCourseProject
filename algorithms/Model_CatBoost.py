@@ -23,9 +23,9 @@ class CatBoost(BaseModel):
         self.params = {
                        # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
                     #    'objective': CatBoost.wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
-                       'iterations': 100,
-                        'learning_rate': 0.2,
-                        'depth': 4,
+                       'iterations': 600,
+                        'learning_rate': 0.1,
+                        #'depth': 4,
                         'verbose': False
                        }
 

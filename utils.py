@@ -13,7 +13,7 @@ from features.days_to_christmas import days_to_christmas
 from features.tot_price import tot_price_per_wk
 from features.pos_lagged import pos_lagged
 from features.Price_Sales_correlation import conc_corr
-
+import statsmodels
 
 def dfs_gen(df, dates):
     """
@@ -54,6 +54,15 @@ def add_all_features(df):
     cluster = cluster.rename(columns={'Label':'cluster', 'Sku':'sku'})
     df = df.merge(cluster, how='left', on='sku')
 
+    # Previous Predictions
+    # preds = pd.read_csv("dataset/pred_previous_week.csv")
+    # preds['Date'] = pd.to_datetime(preds.Date)
+    # df = df.merge(preds, how='left', on=['Date', 'sku'])
+    #
+    # gte = pd.read_csv("features/gte_features_w8_prp50.csv")
+    # gte.Date = pd.to_datetime(gte.Date)
+    # df = df.merge(gte, how='left', on=['Date', 'sku', 'target', 'real_target'])
+
     df = week_of_the_year(df)
 
     # Season
@@ -63,7 +72,7 @@ def add_all_features(df):
     df=tot_price_per_wk(df)
 
     #Correlation Price-Sales
-    df=conc_corr(df)
+    #df=conc_corr(df)
 
     #df=df.dropna() #Use this for Random Forest
     categorical_features = ['cluster']
