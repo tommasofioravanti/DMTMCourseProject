@@ -21,7 +21,6 @@ class LinearRegressionClass(BaseModel):
 
 
     def fit(self,):
-        print(self.X_train_tmp.columns)
         self.model.fit(self.X_train_tmp, self.y_train_tmp)
 
 
@@ -47,7 +46,6 @@ class LinearRegressionClass(BaseModel):
                 self.X_train_tmp = self.X_train[mask_train].drop('sku', axis=1).copy()
                 self.y_train_tmp = self.y_train.loc[self.X_train_tmp.index]
                 self.X_test_tmp = self.X_test[mask_test].copy()
-                print(self.X_test_tmp.columns)
 
                 self.fit()
                 predictions = pd.concat([predictions, self.predict()])

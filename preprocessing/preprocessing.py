@@ -80,8 +80,8 @@ def train_validation_split(train, k=0.20, same_months_test=False):
 
 
 def data_augmentation(df):
-    df_2017 = df[df.Date.dt.year == 2017]
-    df_2018 = df[df.Date.dt.year == 2018]
+    df_2017 = df[df.Date.dt.year == 2017].copy()
+    df_2018 = df[df.Date.dt.year == 2018].copy()
     df_2017['order'] = df_2017.sort_values(['sku', 'Date']).groupby('sku').cumcount()
     df_2018['order'] = df_2018.sort_values(['sku', 'Date']).groupby('sku').cumcount()
     res = []
@@ -127,11 +127,43 @@ def data_augmentation(df):
 
     return df
 
+def data_augmentation_2(df):
+    df17 = df[df.Date.dt.year == 2017].sort_values(['sku', 'Date']).reset_index(drop=True)
+    df18 = df[df.Date.dt.year == 2018].sort_values(['sku', 'Date']).reset_index(drop=True)
+
+    df16 = df17.merge(df18, how='left', on=['sku', 'pack', 'size (GM)', 'brand', 'scope'], left_index=True,
+                      right_index=True)
+    df16 = df16.sort_values(['sku', 'Date_x'])
+
+    cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
+    for c in cols:
+        df16[c] = (df16[c + '_x'].values + df16[c + '_y'].values) / 2
+
+    drop_cols = [c for c in df16.columns if '_x' in c or '_y' in c]
+    df16 = df16.drop(drop_cols, axis=1)
+    res = []
+    for d in df[df.Date.dt.year == 2016].Date.drop_duplicates().values:
+        res.append(d)
+    start_date = pd.to_datetime('2016-12-10')
+    while len(res) != 52:
+        date = start_date - pd.to_timedelta(7, unit='d')
+        res.append(date)
+        start_date = date
+
+    res = pd.to_datetime(res)
+    res = res.sort_values()
+    res = [res] * 43
+    res = [y for x in res for y in x]
+    df16['Date'] = res
+    df16 = df16.drop(df16[df16.Date >= '2016-12-10'].index)
+    df = pd.concat([df16, df])
+    df['sales w-1'] = df.groupby('sku').target.shift(1)
+    return df
 
 def preprocessing(train, test, useTest=True, dataAugmentation=False):
 
     if dataAugmentation:
-        train = data_augmentation(convert_date(train))
+        train = data_augmentation_2(convert_date(train))
         test = convert_date(test)
         df = pd.concat([train, test])
     else:
@@ -139,7 +171,7 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False):
         df = convert_date(df)
 
     if useTest:
-        # TODO Riga da RIMUOVERE PRIMA DELLA CONSEGNA
+        # TODO Riga da RIMUOVERE PRIMA DELLA CONSEGNA    # In realtà credo vada bene questa riga, l'importante è non usare sales w-1 delle settimane future
         df.loc[df.target.isna(), 'target'] = df[df.target.isna()][['Date', 'sku', 'sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
 
     df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
@@ -164,4 +196,11 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False):
     df['target'] = np.log1p(df.target.values)
     df['sales w-1'] = np.log1p(df['sales w-1'].values)
 
+    return df
+
+
+def ohe_categorical(df, categorical_features):
+    for c in categorical_features:
+        dummy = pd.get_dummies(df[c], prefix=c)
+        df[dummy.columns] = dummy
     return df
