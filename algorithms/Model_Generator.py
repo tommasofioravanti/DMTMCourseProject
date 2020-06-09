@@ -136,7 +136,9 @@ class Generator(object):
                 mape = MAPE(self.predictions[self.predictions.Date.isin(df_dates[:-1])].real_target,
                                               self.predictions[self.predictions.Date.isin(df_dates[:-1])]["prediction_" + self.name])
                 print(f'Standard MAPE = {mape}')
-
+                
             else:
                 mape = MAPE(self.predictions.real_target, self.predictions["prediction_" + self.name])
                 print(f'Standard MAPE = {mape}')
+            
+            return mape

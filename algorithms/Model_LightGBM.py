@@ -9,33 +9,36 @@ from algorithms.Base_Model import BaseModel
 
 class LightGBM(BaseModel):
 
-    def __init__(self):
+    def __init__(self, **params):
         super(LightGBM, self).__init__()
-
+        self.params = params
+        self.params['objective'] = BaseModel.wmape_train_ 
+        self.params['verbose']  = -1
+        print(self.params)
+        # self.params = {
+        #                # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
+        #                'objective': BaseModel.wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
+        #                'verbose':-1,
+        #                'boosting_type':'gbdt',
+        #                 'num_leaves':31,
+        #                 'max_depth':- 1,
+        #                 'learning_rate':0.1,
+        #                'n_estimators':600,
+        #                'min_split_gain':0.0,
+        #                'subsample':1.0,
+        #                'subsample_freq':0,
+        #                'colsample_bytree':1.0,
+        #                'reg_alpha':0.0,
+        #                'reg_lambda':0.0,
+        #                'random_state':None,
+        #                'silent':True,
+        #                'importance_type':'split',
+        #                 'tree_learner':'feature',
+        # }
+        
     def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
         super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
                        name=name, isScope=isScope, sample_weights=sample_weights, evaluation=evaluation)
-
-        self.params = {
-                       # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
-                       'objective': BaseModel.wmape_train_,  # Per ottimizzare con una particolare metrica dobbiamo usare l'objective
-                       'verbose':-1,
-                       'boosting_type':'gbdt',
-                        'num_leaves':31,
-                        'max_depth':- 1,
-                        'learning_rate':0.1,
-                       'n_estimators':600,
-                       'min_split_gain':0.0,
-                       'subsample':1.0,
-                       'subsample_freq':0,
-                       'colsample_bytree':1.0,
-                       'reg_alpha':0.0,
-                       'reg_lambda':0.0,
-                       'random_state':None,
-                       'silent':True,
-                       'importance_type':'split',
-                        'tree_learner':'feature',
-        }
 
         self.model = LGBMRegressor(**self.params)
         return self

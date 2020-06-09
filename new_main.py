@@ -51,9 +51,27 @@ categorical_f = [x for x in categorical_f if x not in drop_cols]
 
 #CLUSTER = [1,2,3]      # Set CLUSTER = None if you want NOT to consider any cluster
 CLUSTER = None
-NAME = 'linear_reg'
-
-model = LinearRegressionClass()
+NAME = 'lightgbm'
+params = {
+                       # 'metric': 'huber',   # Se si cambia la metrica non si cambia l'ottimizzazione
+                       'verbose':-1,
+                       'boosting_type':'gbdt',
+                        'num_leaves':31,
+                        'max_depth':- 1,
+                        'learning_rate':0.1,
+                       'n_estimators':600,
+                       'min_split_gain':0.0,
+                       'subsample':1.0,
+                       'subsample_freq':0,
+                       'colsample_bytree':1.0,
+                       'reg_alpha':0.0,
+                       'reg_lambda':0.0,
+                       'random_state':None,
+                       'silent':True,
+                       'importance_type':'split',
+                        'tree_learner':'feature',
+        }
+model = LightGBM(**params)
 model_gen = Generator(df, model,
                         categorical_features=categorical_f,
                         drop_columns=drop_cols,
