@@ -3,11 +3,6 @@ import numpy as np
 from datetime import datetime
 from sklearn.preprocessing import LabelEncoder
 
-# TODO:
-# - feature che tiene conto delle vendite fatte complessivamente
-# - feature che tiene conto delle vendite fatte negli ultimi 1,2,3,6 mesi
-# - feature che tiene conto dell'incremento delle vendite da una settimana all'altra
-
 def preprocessing_more(df_train: pd.DataFrame) -> pd.DataFrame:
     # first split the date into columns
     df_train = _split_date(df_train)
@@ -79,55 +74,7 @@ def train_validation_split(train, k=0.20, same_months_test=False):
     return train, val, val_dates
 
 
-def data_augmentation(df):
-    df_2017 = df[df.Date.dt.year == 2017].copy()
-    df_2018 = df[df.Date.dt.year == 2018].copy()
-    df_2017['order'] = df_2017.sort_values(['sku', 'Date']).groupby('sku').cumcount()
-    df_2018['order'] = df_2018.sort_values(['sku', 'Date']).groupby('sku').cumcount()
-    res = []
-    for d in df[df.Date.dt.year == 2016].Date.drop_duplicates().values:
-        res.append(d)
-    start_date = pd.to_datetime('2016-12-10')
-    while len(res) != 52:
-        date = start_date - pd.to_timedelta(7, unit='d')
-        res.append(date)
-        start_date = date
-    res = pd.to_datetime(res)
-    res = res.sort_values()
-    res = [res] * 43
-    res = [y for x in res for y in x]
-    df_2016 = df_2017.copy()
-    df_2016 = df_2016.sort_values(['sku', 'Date'])
-    df_2016['Date'] = res
-    df_2016['order'] = df_2016.sort_values(['sku', 'Date']).groupby('sku').cumcount()
-
-    cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
-    for c in cols:
-        df_2016[c] = (df_2016[c].values + df_2018[c].values) / 2
-
-    df_dates = df[df.Date.dt.year == 2016].Date.drop_duplicates().values
-    df_2016 = df_2016.drop('order', axis=1)
-    df_2016 = df_2016.sort_values(['sku', 'Date'])
-    df = df.sort_values(['sku', 'Date'])
-
-    df_dates = df_dates[1:]
-
-    cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
-    df_2016.loc[df_2016.Date.isin(df_dates), cols] = df[df.Date.isin(df_dates)][cols].values
-
-    cols = ['price', 'target']
-    df_2016.loc[df_2016.Date == '2016-12-10', cols] = df[df.Date == '2016-12-10'][cols].values
-
-    df_2016_index = df[df.Date.dt.year == 2016].index
-    df = df.drop(df_2016_index)
-
-    df = pd.concat([df_2016, df])
-    df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
-    df['sales w-1'] = df.groupby('sku').target.shift(1)
-
-    return df
-
-def data_augmentation_2(df):
+def data_augmentation_2(df, random_noise=False):
     df17 = df[df.Date.dt.year == 2017].sort_values(['sku', 'Date']).reset_index(drop=True)
     df18 = df[df.Date.dt.year == 2018].sort_values(['sku', 'Date']).reset_index(drop=True)
 
@@ -135,9 +82,12 @@ def data_augmentation_2(df):
                       right_index=True)
     df16 = df16.sort_values(['sku', 'Date_x'])
 
+    weight_17 = np.random.uniform(0, 1, df16.shape[0])
+    weight_18 = 1 - weight_17
+
     cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
     for c in cols:
-        df16[c] = (df16[c + '_x'].values + df16[c + '_y'].values) / 2
+        df16[c] = (weight_17 * df16[c + '_x'].values) + (weight_18 * df16[c + '_y'].values)
 
     drop_cols = [c for c in df16.columns if '_x' in c or '_y' in c]
     df16 = df16.drop(drop_cols, axis=1)
@@ -155,15 +105,39 @@ def data_augmentation_2(df):
     res = [res] * 43
     res = [y for x in res for y in x]
     df16['Date'] = res
+
+    if random_noise:
+        # Random Perturbation
+        def random_perturbation(df, col):
+            np.random.seed(42)
+            stats = df.groupby('sku')[col].agg(mean=np.mean, var=np.var, n='count', min_='min', max_='max').reset_index()
+            df_tmp = df.merge(stats, how='left', on='sku')
+            df_tmp = df_tmp.fillna(0)
+            values = []
+            for v, mean in zip(df_tmp[col], df_tmp['mean']):
+                noise = np.random.normal(0, 1, 1)[0]
+                new_v = v + (noise * (mean / 4))
+                values.append(new_v)
+            df_tmp['new_' + col] = values
+            negative_indices = np.where(df_tmp['new_' + col] < 0)[0]
+            print(f'{c} -- > Negative values {negative_indices.shape}')
+            if negative_indices.shape[0] > 0:
+                df_tmp.loc[negative_indices, 'new_' + col] = 0.0
+            return df_tmp['new_' + col].values
+
+        cols = ['price', 'POS_exposed w-1', 'volume_on_promo w-1', 'sales w-1', 'target']
+        for c in cols:
+            df16[c] = random_perturbation(df16, c)
+
     df16 = df16.drop(df16[df16.Date >= '2016-12-10'].index)
     df = pd.concat([df16, df])
     df['sales w-1'] = df.groupby('sku').target.shift(1)
     return df
 
-def preprocessing(train, test, useTest=True, dataAugmentation=False):
+def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=False):
 
     if dataAugmentation:
-        train = data_augmentation_2(convert_date(train))
+        train = data_augmentation_2(convert_date(train), random_noise=rand_noise)
         test = convert_date(test)
         df = pd.concat([train, test])
     else:

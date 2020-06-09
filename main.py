@@ -16,7 +16,8 @@ from utils import add_all_features
 
 
 def main(model, useTest, useScope, save, completeCV, dataAugm, categorical_features = ['cluster', 'sku', 'pack', 'brand'],
-         drop_cols = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'], cluster=None, name='', useSampleWeights=True, weights_type = 2, isEvaluation = False):
+         drop_cols = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'], cluster=None, name='',
+         useSampleWeights=True, weights_type = 2, isEvaluation = False, rand_noise=False):
 
     train = pd.read_csv("dataset/original/train.csv")
     test = pd.read_csv("dataset/original/x_test.csv")
@@ -32,6 +33,7 @@ def main(model, useTest, useScope, save, completeCV, dataAugm, categorical_featu
 
     dataAugm = dataAugm  # Crea il 2016: consiglio di metterlo a True quando completeCV = True, in modo che l'algoritmo
     # non traini usando solo la prima settimana del train originale, ma usando tutto il 2016 [52 settimane]
+    rand_noise = rand_noise
 
     if isEvaluation:
         useTest = False
@@ -41,7 +43,7 @@ def main(model, useTest, useScope, save, completeCV, dataAugm, categorical_featu
         useTest = False
         useScope = False
 
-    df = preprocessing(train, test, useTest=useTest, dataAugmentation=dataAugm)
+    df = preprocessing(train, test, useTest=useTest, dataAugmentation=dataAugm, rand_noise=rand_noise)
 
     df, categorical_f = add_all_features(df)
     #categorical_f = ['sku', 'pack', 'brand'] + categorical_f
