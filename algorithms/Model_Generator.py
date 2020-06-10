@@ -12,7 +12,7 @@ from metrics.MAPE import MAPE
 
 class Generator(object):
 
-    def __init__(self, df, model, categorical_features, drop_columns, name='', isScope=True, sample_weights_type=None,
+    def __init__(self, df, model, categorical_features, drop_columns, feature_subset=None, name='', isScope=True, sample_weights_type=None,
                  evaluation=False, cluster=None, useTest=True, completeCV=False, dataAugmentation=False):
         """
 
@@ -53,6 +53,7 @@ class Generator(object):
 
         self.cat_features = categorical_features
         self.drop_columns = drop_columns
+        self.feature_subset = feature_subset
         self.name = name
         self.isScope = isScope
         self.evaluation = evaluation
@@ -75,7 +76,9 @@ class Generator(object):
     def run_generator(self, save=False):
 
         for df_train, df_test in tqdm(self.generator):
-
+            if self.feature_subset is not None:
+                df_train = df_train[self.feature_subset+self.cat_features+self.drop_columns+['target']]
+                df_test = df_test[self.feature_subset+self.cat_features+self.drop_columns+['target']]
             if self.sample_weights_type is not None:
                 self.sample_weights = get_weights(df_train, type=self.sample_weights_type)
 
