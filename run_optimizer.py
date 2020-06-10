@@ -51,24 +51,25 @@ df = df.sort_values('Date')
 
 drop_cols = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster']
 categorical_f = [x for x in categorical_f if x not in drop_cols]
-feature_subset = [
-    'sales w-1',
-    'price',
-    'week_of_the_year',
-    'lag_target_50',
-    'increment',
-    'heavy_light',
-    'volume_on_promo w-1',
-    'seasons',
-    'POS_exposed w-1'
-    ]
+# feature_subset = [
+#     'sales w-1',
+#     'price',
+#     'week_of_the_year',
+#     'lag_target_50',
+#     'increment',
+#     'heavy_light',
+#     'volume_on_promo w-1',
+#     'seasons',
+#     'Corr'
+#     ]
+feature_subset = None
 #CLUSTER = [1,2,3]      # Set CLUSTER = None if you want NOT to consider any cluster
 CLUSTER = None
 NAME = 'lightgbm'
 
 space  = [
-    Integer(1, 15, name='max_depth'),
-    Real(10**-3, 10**0-0.5, "log-uniform", name='learning_rate'),
+    Integer(1, 20, name='max_depth'),
+    Real(10**-2, 10**0-0.5, "log-uniform", name='learning_rate'),
     Integer(400, 1000, name='n_estimators'),
     Integer(3,50,name='num_leaves')
 ]
@@ -118,7 +119,7 @@ res_gp = forest_minimize(objective, space, n_calls=50, random_state=17, verbose=
 print("Best score=%.4f" % res_gp.fun)
 print("""Best parameters:
 - max_depth=%d
-- learning_rate=%d
+- learning_rate=%.6f
 - n_estimators=%d
 - num_leaver=%d""" 
     % (res_gp.x[0], res_gp.x[1], 
