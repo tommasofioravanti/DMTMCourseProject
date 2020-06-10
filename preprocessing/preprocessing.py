@@ -47,8 +47,12 @@ def inverse_interpolation(df, date='2016-12-10'):
 
     df = df.sort_values(['sku', 'Date'])
     for i in first_we_idx:
-        inverse_interpolation = 2 * df.loc[i + 1, 'sales w-1'] - df.loc[i + 2, 'sales w-1']
-        df.loc[i, 'sales w-1'] = inverse_interpolation
+        imputed_sales = 2 * df.loc[i + 1, 'sales w-1'] - df.loc[i + 2, 'sales w-1']
+        df.loc[i, 'sales w-1'] = imputed_sales
+        imputed_pos_exp = 2 * df.loc[i + 1, 'POS_exposed w-1'] - df.loc[i + 2, 'POS_exposed w-1']
+        df.loc[i, 'POS_exposed w-1'] = imputed_pos_exp
+        imputed_volume = 2 * df.loc[i + 1, 'volume_on_promo w-1'] - df.loc[i + 2, 'volume_on_promo w-1']
+        df.loc[i, 'volume_on_promo w-1'] = imputed_volume
 
     return df
 
@@ -132,7 +136,9 @@ def data_augmentation_2(df, random_noise=False):
     df16 = df16.drop(df16[df16.Date >= '2016-12-10'].index)
     df = pd.concat([df16, df])
     df['sales w-1'] = df.groupby('sku').target.shift(1)
+
     return df
+
 
 def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=False):
 
@@ -140,6 +146,16 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=F
         train = data_augmentation_2(convert_date(train), random_noise=rand_noise)
         test = convert_date(test)
         df = pd.concat([train, test])
+
+        df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
+        nan_indices = df[df['POS_exposed w-1'].isna()].index
+
+        for i in nan_indices:
+            imputed_pos = (df.loc[i - 1, 'POS_exposed w-1'] + df.loc[i + 1, 'POS_exposed w-1']) / 2
+            df.loc[i, 'POS_exposed w-1'] = imputed_pos
+            imputed_volume = (df.loc[i - 1, 'volume_on_promo w-1'] + df.loc[i + 1, 'volume_on_promo w-1']) / 2
+            df.loc[i, 'volume_on_promo w-1'] = imputed_volume
+
     else:
         df = pd.concat([train, test])
         df = convert_date(df)
@@ -154,10 +170,11 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=F
     df.pack = le.fit_transform(df.pack)
     df.brand = le.fit_transform(df.brand)
 
-    # Impute sales w-1 NaNs in the first week
-    first_date = df.Date.sort_values().drop_duplicates().values
-    first_date = first_date[0]
-    df = inverse_interpolation(df, date=first_date)
+    # Impute NaNs in the first week if not data_augmentation
+    if not dataAugmentation:
+        first_date = df.Date.sort_values().drop_duplicates().values
+        first_date = first_date[0]
+        df = inverse_interpolation(df, date=first_date)
 
     #   --------------- Features -----------------
 
