@@ -11,7 +11,6 @@ class LinearRegressionClass(BaseModel):
 
     def __init__(self):
         super(LinearRegressionClass, self).__init__()
-        self.dict_error = {}
 
     def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
         super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
@@ -25,8 +24,6 @@ class LinearRegressionClass(BaseModel):
 
 
     def predict(self,):
-
-
         self.X_test_tmp['log_prediction_' + self.name] = self.model.predict(self.X_test_tmp.drop(['target','sku'] + self.drop_columns, axis=1))
         self.X_test_tmp['prediction_' + self.name] = np.expm1(self.X_test_tmp['log_prediction_' + self.name])
 
