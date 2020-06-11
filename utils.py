@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import statsmodels
+#import statsmodels
 
 from features.exponential_moving_average import exponential_weighted_moving_average
 from features.moving_average import moving_average
@@ -14,10 +14,11 @@ from features.partial_sales import partial_sales
 from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas
 from features.tot_price1 import tot_price_per_wk
-from features.Price_Sales_correlation import conc_corr
 from features.price_change import price_change
 from features.sales_per_brand_w1 import sales_per_brand_w1
-
+from features.POS_Corr import Corr_Pos
+from features.Vol_Corr import Corr
+from features.clustering import get_cluster
 
 def dfs_gen(df, dates):
     """
@@ -48,7 +49,6 @@ def add_all_features(df):
     df = lag_target(df, 25)
     df = lag_target(df, 50)
 
-    # df = tot_price_per_wk(df)
     df = lag_pos(df, 1)
     # df = lag_volume(df, 1)
     # df = price_change(df)
@@ -65,18 +65,12 @@ def add_all_features(df):
     df = partial_sales(df)
 
     # Cluster
-    cluster = pd.read_csv("dataset/cluster.csv")
-    cluster = cluster.rename(columns={'Label':'cluster', 'Sku':'sku'})
+    cluster = get_cluster()
     df = df.merge(cluster, how='left', on='sku')
 
-    # Previous Predictions
-    # preds = pd.read_csv("dataset/pred_previous_week.csv")
-    # preds['Date'] = pd.to_datetime(preds.Date)
-    # df = df.merge(preds, how='left', on=['Date', 'sku'])
-    #
-    # gte = pd.read_csv("features/gte_features_w8_prp50.csv")
-    # gte.Date = pd.to_datetime(gte.Date)
-    # df = df.merge(gte, how='left', on=['Date', 'sku', 'target', 'real_target'])
+    gte = pd.read_csv("features/gte_features_w8_prp50.csv")
+    gte.Date = pd.to_datetime(gte.Date)
+    df = df.merge(gte, how='left', on=['Date', 'sku', 'target', 'real_target'])
 
     df = week_of_the_year(df)
 
@@ -90,6 +84,8 @@ def add_all_features(df):
     categorical_features = ['cluster']
 
     return df, categorical_features
+
+
 
 
 def get_weights(train, type=0):
