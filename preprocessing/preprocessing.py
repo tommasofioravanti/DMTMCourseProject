@@ -61,7 +61,7 @@ def inverse_interpolation(df, date='2016-12-10'):
 
         # Se è la prima riga del train originale imputo anche POS_exp e volume
         # Se è la prima riga della data_augmentation imputo solo sales
-        if date == '2016-12-10':
+        if date == np.datetime64("2016-12-10"):
             imputed_pos_exp = 2 * df.loc[i + 1, 'POS_exposed w-1'] - df.loc[i + 2, 'POS_exposed w-1']
             df.loc[i, 'POS_exposed w-1'] = imputed_pos_exp
             imputed_volume = 2 * df.loc[i + 1, 'volume_on_promo w-1'] - df.loc[i + 2, 'volume_on_promo w-1']
@@ -169,6 +169,12 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=F
             df.loc[i, 'POS_exposed w-1'] = imputed_pos
             imputed_volume = (df.loc[i - 1, 'volume_on_promo w-1'] + df.loc[i + 1, 'volume_on_promo w-1']) / 2
             df.loc[i, 'volume_on_promo w-1'] = imputed_volume
+
+        cols = df.columns.tolist()
+        cols.remove('Date')
+        cols.insert(0, 'Date')
+        df = df[cols]
+
     else:
         df = pd.concat([train, test])
         df = convert_date(df)
@@ -184,7 +190,6 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=F
     df.brand = le.fit_transform(df.brand)
 
     # Impute NaNs in the first week if not data_augmentation
-
     first_date = df.Date.sort_values().drop_duplicates().values
     first_date = first_date[0]
     df = inverse_interpolation(df, date=first_date)
