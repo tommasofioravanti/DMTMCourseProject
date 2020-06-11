@@ -40,23 +40,46 @@ test_params = {
 test_params_cluster = test_params.copy()
 test_params_cluster['cluster'] = [1,2]
 
-# Create Prediction on both train and Test
+# Create Prediction on both Train and Test
 
 
 # LightGBM Standard
+lgb_model_params = {'max_depth': 15, 'learning_rate': 0.07617385187267685, 'n_estimators': 950, 'num_leaves': 24}
+
 train_params['name'] = 'lgb_std'
 test_params['name'] = 'lgb_std'
 
-main(model=LightGBM(),**train_params)
-#main(model=LightGBM(),**test_params)
+lgb_train_params = train_params.copy()
+lgb_train_params['drop_cols'] = ['scope', 'Date',
+                                 'real_target', 'pack',
+                                 'size (GM)','cluster',
+                                 'week_of_the_year',
+                                 'month','brand']
 
+lgb_test_params = test_params.copy()
+lgb_test_params['drop_cols'] = ['scope', 'Date',
+                                'real_target', 'pack',
+                                'size (GM)', 'cluster',
+                                'week_of_the_year',
+                                'month','brand']
+
+main(model=LightGBM(**lgb_model_params),**lgb_train_params)
+main(model=LightGBM(**lgb_model_params),**lgb_test_params)
 
 # LightGBM Cluster
 train_params_cluster['name'] = 'lgb_cls'
 test_params_cluster['name'] = 'lgb_cls'
 
-main(model = LightGBM(), **train_params_cluster)
-main(model=LightGBM(),**test_params_cluster)
+lgb_train_params_cluster = train_params_cluster.copy()
+lgb_train_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)',
+                                 'cluster','week_of_the_year','month','brand']
+
+lgb_test_params_cluster = test_params_cluster.copy()
+lgb_test_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)',
+                                 'cluster','week_of_the_year','month','brand']
+
+main(model = LightGBM(**lgb_model_params), **lgb_train_params_cluster)
+main(model=LightGBM(**lgb_model_params),**lgb_test_params_cluster)
 
 
 
