@@ -18,7 +18,6 @@ train_params = {
     'save':True,
     'completeCV':True,
     'dataAugm':True,
-    'rand_noise':False,
     'categorical_features':['cluster', 'sku', 'pack', 'brand'],
     'drop_cols':['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'],
 }
@@ -32,7 +31,6 @@ test_params = {
     'save':True,
     'completeCV':False,
     'dataAugm':False,
-    'rand_noise': False,
     'categorical_features':['cluster', 'sku', 'pack', 'brand'],
     'drop_cols':['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'],
 }
@@ -42,64 +40,72 @@ test_params_cluster['cluster'] = [1,2]
 
 # Create Prediction on both Train and Test
 
-
 # LightGBM Standard
-lgb_model_params = {'max_depth': 15, 'learning_rate': 0.07617385187267685, 'n_estimators': 950, 'num_leaves': 24}
-
-train_params['name'] = 'lgb_std'
-test_params['name'] = 'lgb_std'
+lgb_model_params = {'max_depth': 31, 'learning_rate': 0.06, 'n_estimators': 950}
 
 lgb_train_params = train_params.copy()
-lgb_train_params['drop_cols'] = ['scope', 'Date',
-                                 'real_target', 'pack',
-                                 'size (GM)','cluster',
-                                 'week_of_the_year',
-                                 'month','brand']
-
 lgb_test_params = test_params.copy()
-lgb_test_params['drop_cols'] = ['scope', 'Date',
-                                'real_target', 'pack',
-                                'size (GM)', 'cluster',
+
+lgb_train_params['name'] = 'lgb_std'
+lgb_test_params['name'] = 'lgb_std'
+
+lgb_train_params['drop_cols'] = ['scope',
+                                 'Date',
+                                 'real_target',
+                                 'pack',
+                                 'size (GM)',
+                                 'cluster',
+                                 'brand',
+                                 'week_of_the_year',
+                                 'year']
+
+lgb_test_params['drop_cols'] = ['scope',
+                                'Date',
+                                'real_target',
+                                'pack',
+                                'size (GM)',
+                                'cluster',
+                                'brand',
                                 'week_of_the_year',
-                                'month','brand']
+                                'year']
 
 main(model=LightGBM(**lgb_model_params),**lgb_train_params)
 main(model=LightGBM(**lgb_model_params),**lgb_test_params)
 
 # LightGBM Cluster
-train_params_cluster['name'] = 'lgb_cls'
-test_params_cluster['name'] = 'lgb_cls'
+lgb_cluster_model_params = {'max_depth': 31, 'learning_rate': 0.06, 'n_estimators': 650}
 
 lgb_train_params_cluster = train_params_cluster.copy()
-lgb_train_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)',
-                                 'cluster','week_of_the_year','month','brand']
-
 lgb_test_params_cluster = test_params_cluster.copy()
-lgb_test_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)',
-                                 'cluster','week_of_the_year','month','brand']
 
-main(model = LightGBM(**lgb_model_params), **lgb_train_params_cluster)
-main(model=LightGBM(**lgb_model_params),**lgb_test_params_cluster)
+lgb_train_params_cluster['name'] = 'lgb_cls'
+lgb_test_params_cluster['name'] = 'lgb_cls'
 
+lgb_test_params_cluster['dataAugm'] = True
+
+lgb_train_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster','brand', 'week_of_the_year', 'year']
+lgb_test_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster','brand', 'week_of_the_year', 'year']
+
+main(model = LightGBM(**lgb_cluster_model_params), **lgb_train_params_cluster)
+main(model=LightGBM(**lgb_cluster_model_params),**lgb_test_params_cluster)
 
 
 # Catboost Standard
-model = CatBoost()
+catboost_model_params = {'num_leaves':31, 'learning_rate':0.1, 'n_estimators':600,}
 
-train_params['name'] = 'cat_std'
-test_params['name'] = 'cat_std'
+catboost_train_params = train_params_cluster.copy()
+catboost_test_params = test_params_cluster.copy()
 
-main(model=CatBoost(), **train_params)
-main(model=CatBoost(),**test_params)
+catboost_train_params['name'] = 'catboost'
+catboost_test_params['name'] = 'catboost'
 
+gte_cols = ['gte_pack','gte_brand','gte_cluster','gte_pack_brand',
+            'gte_pack_cluster','gte_brand_cluster','gte_pack_brand_cluster']
+catboost_train_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster',] + gte_cols
+catboost_test_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'] + gte_cols
 
-# Catboost Cluster
-
-train_params_cluster['name'] = 'cat_cls'
-test_params_cluster['name'] = 'cat_cls'
-
-main(model=CatBoost(), **train_params_cluster)
-main(model=CatBoost(),**test_params_cluster)
+main(model=CatBoost(**catboost_model_params), **catboost_train_params)
+main(model=CatBoost(**catboost_model_params),**catboost_test_params)
 
 
 # Linear Regression per sku

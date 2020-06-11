@@ -70,7 +70,7 @@ def inverse_interpolation(df, date='2016-12-10'):
     return df
 
 
-def train_validation_split(train, k=0.20, same_months_test=False):
+def train_validation_split(train, k=0.10, same_months_test=False):
     train = train.sort_values('Date')
 
     if same_months_test:
