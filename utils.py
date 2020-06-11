@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import statsmodels
 
 from features.exponential_moving_average import exponential_weighted_moving_average
 from features.moving_average import moving_average
@@ -7,13 +8,16 @@ from features.slope import slope
 from features.week_of_the_year import week_of_the_year
 from features.season import season
 from features.lag_target import lag_target
+from features.lag_pos import lag_pos
+from features.lag_volume import lag_volume
 from features.partial_sales import partial_sales
 from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas
-from features.tot_price import tot_price_per_wk
-from features.pos_lagged import pos_lagged
+from features.tot_price1 import tot_price_per_wk
 from features.Price_Sales_correlation import conc_corr
-import statsmodels
+from features.price_change import price_change
+from features.sales_per_brand_w1 import sales_per_brand_w1
+
 
 def dfs_gen(df, dates):
     """
@@ -31,12 +35,24 @@ def dfs_gen(df, dates):
 
 
 def add_all_features(df):
+    df = df.sort_values(['Date','sku']).reset_index(drop=True)
     # Features
     df = moving_average(df, 20)
     _, df['increment'] = slope(df)
     df['exp_ma'] = exponential_weighted_moving_average(df, com=0.3)
+    # df = lag_target(df, 2)
+    # df = lag_target(df, 3)
+    # df = lag_target(df, 4)
+    # df = lag_target(df, 5)
+    # df = lag_target(df, 52)
     df = lag_target(df, 25)
     df = lag_target(df, 50)
+
+    # df = tot_price_per_wk(df)
+    df = lag_pos(df, 1)
+    # df = lag_volume(df, 1)
+    # df = price_change(df)
+    # df = sales_per_brand_w1(df)
 
     ## Date Features
     # train['year'] = train.Date.dt.strftime('%Y %m %d').str.split(" ").apply(lambda x:x[0]).astype(int)
@@ -47,7 +63,6 @@ def add_all_features(df):
     df = days_to_christmas(df)
     df = heavy_light(df)
     df = partial_sales(df)
-    df = pos_lagged(df)
 
     # Cluster
     cluster = pd.read_csv("dataset/cluster.csv")
@@ -67,9 +82,6 @@ def add_all_features(df):
 
     # Season
     df = season(df)
-
-    #Tot_price_wk
-    df=tot_price_per_wk(df)
 
     #Correlation Price-Sales
     #df=conc_corr(df)
