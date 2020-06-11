@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import statsmodels
+#import statsmodels
 
 from features.exponential_moving_average import exponential_weighted_moving_average
 from features.moving_average import moving_average
@@ -17,8 +17,8 @@ from features.tot_price1 import tot_price_per_wk
 from features.Price_Sales_correlation import conc_corr
 from features.price_change import price_change
 from features.sales_per_brand_w1 import sales_per_brand_w1
-
-
+from features.POS_Corr import Corr_Pos
+from features.Vol_Corr import Corr
 def dfs_gen(df, dates):
     """
     Train-Test generator
@@ -82,9 +82,9 @@ def add_all_features(df):
 
     # Season
     df = season(df)
-
+    df=Corr(df)
     #Correlation Price-Sales
-    #df=conc_corr(df)
+    df=Corr_Pos(df)
 
     #df=df.dropna() #Use this for Random Forest
     categorical_features = ['cluster']
