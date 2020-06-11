@@ -4,6 +4,7 @@ from scipy.spatial.distance import cdist, pdist
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
 from scipy import stats
 from scipy.stats import pearsonr
+import os
 
 import sys
 sys.path.append('../')
@@ -12,8 +13,9 @@ from preprocessing.preprocessing import convert_date
 
 
 def get_cluster():
-    train = pd.read_csv("../dataset/original/train.csv")
-    test = pd.read_csv("../dataset/original/x_test.csv")
+    abs_path = os.path.abspath('.')
+    train = pd.read_csv( os.path.join(abs_path, "dataset/original/train.csv"))
+    test = pd.read_csv(os.path.join(abs_path, "dataset/original/x_test.csv"))
     df = pd.concat([train, test], sort=False)
 
     df = convert_date(df)
