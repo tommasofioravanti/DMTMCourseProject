@@ -41,6 +41,15 @@ def convert_date(df):
     df.Date = pd.to_datetime(df.Date)
     return df
 
+def inverse_interpolation_price(df,date='2016-12-10'):
+    first_we_idx = df[df.Date == pd.to_datetime(date)].index
+
+    df = df.sort_values(['sku', 'Date'])
+    for i in first_we_idx:
+        inverse_interpolation = 2 * df.loc[i + 1, 'price'] - df.loc[i + 2, 'price']
+        df.loc[i, 'price'] = inverse_interpolation
+
+    return df
 
 def inverse_interpolation(df, date='2016-12-10'):
     first_we_idx = df[df.Date == pd.to_datetime(date)].index
