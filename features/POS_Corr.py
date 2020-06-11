@@ -2,7 +2,7 @@ import numpy as np
 from preprocessing.preprocessing import inverse_interpolation
 from scipy.stats import pearsonr
 
-def impute_price(df):
+def impute_POS(df):
     df=inverse_interpolation(df)
     return df
 
@@ -13,7 +13,7 @@ def Corr_Pos(df):
     sku_list = list(set(df.sku))
     sku_list.sort()
 
-    df=impute_price(df)
+    df=impute_POS(df)
 
     #t_p = []
 
