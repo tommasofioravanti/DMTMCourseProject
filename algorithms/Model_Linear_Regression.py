@@ -25,6 +25,7 @@ class LinearRegressionClass(BaseModel):
 
 
     def predict(self,):
+        # add trick
         p = self.model.predict(self.X_test_tmp.drop(['target','sku'] + self.drop_columns, axis=1))[0]
 
         if list(self.X_test_tmp.sku)[0] in self.dict_error:
@@ -39,7 +40,7 @@ class LinearRegressionClass(BaseModel):
         self.X_test_tmp['prediction_' + self.name] = np.expm1(self.X_test_tmp['log_prediction_' + self.name])
 
         return self.X_test_tmp[['Date', 'sku', 'target', 'real_target', 'log_prediction_' + self.name, 'prediction_' + self.name]]
-        
+
     def plot_feature_importance(self):
         print(self.model.coef_)
 
