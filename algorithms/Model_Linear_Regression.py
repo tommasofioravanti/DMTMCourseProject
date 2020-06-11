@@ -11,7 +11,6 @@ class LinearRegressionClass(BaseModel):
 
     def __init__(self):
         super(LinearRegressionClass, self).__init__()
-        self.dict_error = {}
 
     def create(self, train, test, categorical_features=[], drop_columns=[], name='', isScope=True, sample_weights=None, evaluation=False):
         super().create(train=train, test=test, categorical_features=categorical_features, drop_columns=drop_columns,
@@ -25,17 +24,7 @@ class LinearRegressionClass(BaseModel):
 
 
     def predict(self,):
-        p = self.model.predict(self.X_test_tmp.drop(['target','sku'] + self.drop_columns, axis=1))[0]
-
-        if list(self.X_test_tmp.sku)[0] in self.dict_error:
-            new_p = p + p*self.dict_error[list(self.X_test_tmp.sku)[0]]/150
-        else:
-            new_p = p
-
-        if list(self.X_test_tmp.target)[0]!=0:
-            self.dict_error[list(self.X_test_tmp.sku)[0]] = (list(self.X_test_tmp.target)[0]-p)*100/list(self.X_test_tmp.target)[0]
-
-        self.X_test_tmp['log_prediction_' + self.name] = new_p
+        self.X_test_tmp['log_prediction_' + self.name] = self.model.predict(self.X_test_tmp.drop(['target','sku'] + self.drop_columns, axis=1))
         self.X_test_tmp['prediction_' + self.name] = np.expm1(self.X_test_tmp['log_prediction_' + self.name])
 
         return self.X_test_tmp[['Date', 'sku', 'target', 'real_target', 'log_prediction_' + self.name, 'prediction_' + self.name]]

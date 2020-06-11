@@ -112,3 +112,6 @@ preds['ensemble'] = np.expm1(preds.ensemble)
 print(f'MAPE on test set: {MAPE(preds[~preds.target.isna()].real_target, preds[~preds.target.isna()].ensemble)}')
 
 #preds[['Date', 'sku', 'ensemble']].to_csv('../dataset/prediction/test/stacking_preds.csv', index=False)
+
+print(cols)
+print(reg.coef_)
