@@ -23,7 +23,7 @@ def Corr(df):
         df1 = df
         p1 = []
         for e in range(1, (df1[df1.sku == i].shape[0])):
-            a = df1[df1.sku == i].iloc[0:e + 1]['POS_exposed w-1']
+            a = df1[df1.sku == i].iloc[0:e + 1]['volume_on_promo w-1']
 
             # print(a)
             # v=len(tot_sales[j])
