@@ -39,9 +39,9 @@ test_params_cluster = test_params.copy()
 test_params_cluster['cluster'] = [1,2]
 
 # Create Prediction on both Train and Test
-
+"""
 # LightGBM Standard
-lgb_model_params = {'max_depth': 31, 'learning_rate': 0.06, 'n_estimators': 950}
+lgb_model_params = {'num_leaves':31, 'max_depth': -1, 'learning_rate': 0.06, 'n_estimators': 950}
 
 lgb_train_params = train_params.copy()
 lgb_test_params = test_params.copy()
@@ -73,7 +73,7 @@ main(model=LightGBM(**lgb_model_params),**lgb_train_params)
 main(model=LightGBM(**lgb_model_params),**lgb_test_params)
 
 # LightGBM Cluster
-lgb_cluster_model_params = {'max_depth': 31, 'learning_rate': 0.06, 'n_estimators': 650}
+lgb_cluster_model_params = {'num_leaves':31, 'max_depth': -1, 'learning_rate': 0.06, 'n_estimators': 650}
 
 lgb_train_params_cluster = train_params_cluster.copy()
 lgb_test_params_cluster = test_params_cluster.copy()
@@ -88,26 +88,27 @@ lgb_test_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 
 
 main(model = LightGBM(**lgb_cluster_model_params), **lgb_train_params_cluster)
 main(model=LightGBM(**lgb_cluster_model_params),**lgb_test_params_cluster)
-
+"""
 
 # Catboost Standard
-catboost_model_params = {'num_leaves':31, 'learning_rate':0.1, 'n_estimators':600,}
+catboost_model_params = {'num_leaves':31, 'learning_rate':0.1, 'n_estimators':600}
 
-catboost_train_params = train_params_cluster.copy()
-catboost_test_params = test_params_cluster.copy()
+catboost_train_params = train_params.copy()
+catboost_test_params = test_params.copy()
 
 catboost_train_params['name'] = 'catboost'
 catboost_test_params['name'] = 'catboost'
 
 gte_cols = ['gte_pack','gte_brand','gte_cluster','gte_pack_brand',
             'gte_pack_cluster','gte_brand_cluster','gte_pack_brand_cluster']
-catboost_train_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster',] + gte_cols
+
+catboost_train_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'] + gte_cols
 catboost_test_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'] + gte_cols
 
 main(model=CatBoost(**catboost_model_params), **catboost_train_params)
 main(model=CatBoost(**catboost_model_params),**catboost_test_params)
 
-
+"""
 # Linear Regression per sku
 train_params['name'] = 'linear_reg'
 test_params['name'] = 'linear_reg'
@@ -123,3 +124,4 @@ test_params['rand_noise'] = True
 
 main(model=LinearRegressionClass(), **train_params)
 main(model=LinearRegressionClass(), **test_params)
+"""

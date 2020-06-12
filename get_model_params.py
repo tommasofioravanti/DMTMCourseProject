@@ -31,7 +31,7 @@ def get_model_params(model_name, useTest):
         return model_params, params
 
 
-    if model_name == 'lgb_cls':
+    elif model_name == 'lgb_cls':
         model_params = {'boosting_type': 'gbdt',
                         'num_leaves': 31,
                         'max_depth': - 1,
@@ -61,18 +61,21 @@ def get_model_params(model_name, useTest):
                       }
         return model_params, params
 
-    if model_name == 'catboost':
+    elif model_name == 'catboost':
         model_params = {
-                        'num_leaves': 31,
                         'learning_rate': 0.1,
                         'n_estimators': 600, }
+
+        gte_cols = ['gte_pack', 'gte_brand', 'gte_cluster', 'gte_pack_brand',
+                    'gte_pack_cluster', 'gte_brand_cluster', 'gte_pack_brand_cluster']
+
         if useTest:
             params = {'useTest': True,
                       'useScope': True,
                       'save': False,
                       'completeCV': False,
                       'dataAugm': False,
-                      'drop_cols': ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'],
+                      'drop_cols': ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'] + gte_cols,
                       'cluster': None,
                       'name': 'catboost'
                       }
@@ -82,7 +85,7 @@ def get_model_params(model_name, useTest):
                       'save': False,
                       'completeCV': False,
                       'dataAugm': True,
-                      'drop_cols': ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'],
+                      'drop_cols': ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster'] + gte_cols,
                       'cluster': None,
                       'name': 'catboost'
                       }

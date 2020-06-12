@@ -15,7 +15,7 @@ from metrics.MAPE import MAPE
 from utils import add_all_features
 
 
-def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=False, dataAugm=True, drop_cols=[], cluster=None, name='', categorical_features=['cluster', 'sku', 'pack', 'brand']):
+def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=False, dataAugm=True, drop_cols=[], cluster=None, name='', categorical_features=['sku', 'pack', 'brand']):
     train = pd.read_csv("dataset/original/train.csv")
     test = pd.read_csv("dataset/original/x_test.csv")
 
@@ -34,6 +34,7 @@ def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=
     df = preprocessing(train, test, useTest=useTest, dataAugmentation=dataAugm)
 
     df, categorical_f = add_all_features(df)
+
     categorical_f = list(set(categorical_features + categorical_f))
     drop_cols = drop_cols
     categorical_f = [x for x in categorical_f if x not in drop_cols]
@@ -50,6 +51,8 @@ def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=
 
     elif NAME == 'catboost':
         model = CatBoost(**model_params)
+
+    print(useTest)
 
 
     print('Start the model ' + NAME)
@@ -89,6 +92,6 @@ def run_model(model_name, useTest):
 
 if __name__=='__main__':
 
-    run_model('lgb_std', useTest=False)
+    run_model('catboost', useTest=True)
 
 

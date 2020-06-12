@@ -189,7 +189,6 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=F
         df = convert_date(df)
 
     if useTest:
-        # TODO Riga da RIMUOVERE PRIMA DELLA CONSEGNA    # In realtà credo vada bene questa riga, l'importante è non usare sales w-1 delle settimane future
         df.loc[df.target.isna(), 'target'] = df[df.target.isna()][['Date', 'sku', 'sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
 
     df = df.sort_values(['sku', 'Date']).reset_index(drop=True)
