@@ -108,19 +108,3 @@ catboost_test_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'si
 main(model=CatBoost(**catboost_model_params), **catboost_train_params)
 main(model=CatBoost(**catboost_model_params),**catboost_test_params)
 
-
-# Linear Regression per sku
-train_params['name'] = 'linear_reg'
-test_params['name'] = 'linear_reg'
-
-drop_cols = train_params['drop_cols'].copy()
-drop_cols = drop_cols + ['pack', 'brand']
-
-train_params['drop_cols'] = drop_cols
-test_params['drop_cols'] = drop_cols
-
-train_params['rand_noise'] = True
-test_params['rand_noise'] = True
-
-main(model=LinearRegressionClass(), **train_params)
-main(model=LinearRegressionClass(), **test_params)

@@ -119,6 +119,25 @@ for train, test in stacking_gen_test(prediction_train, prediction_test):
 
 preds['ensemble'] = np.expm1(preds.ensemble)
 
-preds[['Date', 'sku', 'ensemble']].to_csv('../dataset/prediction/test/stacking_preds.csv', index=False)
+
+def extract_subm(stack_pred):
+    # stack_pred['Date'] = pd.to_datetime(stack_pred['Date'])
+    subm = pd.read_csv("../dataset/original/example_submission.csv")
+    subm = subm.drop('prediction', axis=1)
+    from preprocessing.preprocessing import convert_date
+    subm['Date'] = convert_date(subm[['Unnamed: 0']])
+    subm = subm.merge(stack_pred, how='left', on=['Date', 'sku']).rename(columns={'ensemble':'prediction'}).set_index('Unnamed: 0')
+    return subm.drop('Date', axis=1)
+
+
+preds = extract_subm(preds[['Date', 'sku', 'ensemble']])
+print(preds.columns)
+
+
+preds.to_csv('../dataset/prediction/test/stacking_preds.csv')
+
+
+
+
 
 print(list(zip(cols, reg.coef_)))
