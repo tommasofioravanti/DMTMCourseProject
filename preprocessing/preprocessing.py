@@ -2,6 +2,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from sklearn.preprocessing import LabelEncoder
+import os
+
+from pathlib import Path
+
 
 def preprocessing_more(df_train: pd.DataFrame) -> pd.DataFrame:
     # first split the date into columns
@@ -83,9 +87,14 @@ def train_validation_split(train, k=0.10, same_months_test=False):
         val_dates = val.sort_values('Date').drop_duplicates('Date')['Date']
 
     else:
-        train_dates = train['Date'].drop_duplicates(keep='first')
-        k = int(len(train_dates) * k)
-        val_dates = train_dates[-k:]
+        abs_path = Path(__file__).absolute().parent
+        original_train = pd.read_csv(os.path.join(abs_path, "../dataset/original/train.csv"))
+        original_test = pd.read_csv(os.path.join(abs_path, "../dataset/original/x_test.csv"))
+        df_ = preprocessing(original_train, original_test, useTest=False, dataAugmentation=True)
+        df_ = df_[~df_.target.isna()]
+        df_dates = df_.Date.sort_values().drop_duplicates()
+        k = int(len(df_dates) * k)
+        val_dates = df_dates[-k:]
         train, val = train[~train.Date.isin(val_dates)], train[train.Date.isin(val_dates)]
 
     return train, val, val_dates
@@ -180,7 +189,6 @@ def preprocessing(train, test, useTest=True, dataAugmentation=False,rand_noise=F
         df = convert_date(df)
 
     if useTest:
-        # TODO Riga da RIMUOVERE PRIMA DELLA CONSEGNA    # In realtà credo vada bene questa riga, l'importante è non usare sales w-1 delle settimane future
         df.loc[df.target.isna(), 'target'] = df[df.target.isna()][['Date', 'sku', 'sales w-1']].groupby('sku')['sales w-1'].shift(-1).values
 
     df = df.sort_values(['sku', 'Date']).reset_index(drop=True)

@@ -10,7 +10,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 path_train = '../dataset/prediction/val/'
-path_test =  '../dataset/prediction/test/'
+path_test = '../dataset/prediction/test/'
 
 # Load predictions
 # LightGBM standard
@@ -22,37 +22,25 @@ lgb_cls_train = pd.read_csv(path_train + "lgb_cls_val.csv")
 lgb_cls_test = pd.read_csv(path_test + "lgb_cls_test.csv")
 
 # Catboost standard
-cat_std_train = pd.read_csv(path_train + "cat_std_val.csv")
-cat_std_test = pd.read_csv(path_test + "cat_std_test.csv")
-
-# Catboost cluster
-cat_cls_train = pd.read_csv(path_train + "cat_cls_val.csv")
-cat_cls_test = pd.read_csv(path_test + "cat_cls_test.csv")
-
-# Linear Regression by sku
-lin_reg_train = pd.read_csv(path_train + "linear_reg_val.csv")
-lin_reg_test = pd.read_csv(path_test + "linear_reg_test.csv")
+cat_std_train = pd.read_csv(path_train + "catboost_val.csv")
+cat_std_test = pd.read_csv(path_test + "catboost_test.csv")
 
 train = pd.read_csv("../dataset/original/train.csv")
 test = pd.read_csv("../dataset/original/x_test.csv")
 df = preprocessing(train, test, useTest=False)
 
 # Train
-prediction_train = lgb_cls_train.merge(lgb_std_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
-prediction_train = prediction_train.merge(cat_std_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
-prediction_train = prediction_train.merge(cat_cls_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
-prediction_train = prediction_train.merge(lin_reg_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_train = cat_std_train.merge(lgb_std_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_train = lgb_cls_train.merge(prediction_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_train.Date = pd.to_datetime(prediction_train.Date)
 
 prediction_train.Date = pd.to_datetime(prediction_train.Date)
 prediction_train = prediction_train.merge(df[['Date', 'sku', 'sales w-1']], how='left', on=['Date', 'sku'])
 
-
 # Test
-prediction_test = lgb_cls_test.merge(lgb_std_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
-prediction_test = prediction_test.merge(cat_std_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
-prediction_test = prediction_test.merge(cat_cls_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
-#prediction_test = prediction_test.merge(xgb_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
-prediction_test = prediction_test.merge(lin_reg_test.drop(['target', 'real_target'], axis=1), how='left', on=['Date', 'sku'])
+prediction_test = cat_std_test.merge(lgb_std_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_test = lgb_cls_test.merge(prediction_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_test.Date = pd.to_datetime(prediction_test.Date)
 
 prediction_test.Date = pd.to_datetime(prediction_test.Date)
 prediction_test = prediction_test.merge(df[['Date', 'sku', 'sales w-1']], how='left')
@@ -66,11 +54,7 @@ prediction_train = prediction_train.drop(prediction_train[mask].index)
 
 cols = ['log_prediction_lgb_cls',
         'log_prediction_lgb_std',
-        'log_prediction_cat_std',
-        'log_prediction_cat_cls',
-        'log_prediction_linear_reg',
-        #'prediction',
-        #'sales w-1'
+        'log_prediction_catboost',
        ]
 
 
