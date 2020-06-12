@@ -159,10 +159,10 @@ def run_xgboost(useTest=False, useScope=False, completeCV = False, dataAugm = Fa
 
     if save:
         if useTest:
-            prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/test/xgb_inc_test_1.csv", index=False)
+            prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/test/xgb_inc_test.csv", index=False)
         else:
             if completeCV:
-                prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/val/xgb_inc_val_1.csv", index=False)
+                prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/val/xgb_inc_val.csv", index=False)
 
     plt.figure(figsize=(20, 10))
 
