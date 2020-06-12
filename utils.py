@@ -13,7 +13,7 @@ from features.lag_volume import lag_volume
 from features.partial_sales import partial_sales
 from features.heavy_light import heavy_light
 from features.days_to_christmas import days_to_christmas
-from features.tot_price1 import tot_price_per_wk
+from features.tot_price_imp import tot_price_per_wk
 from features.price_change import price_change
 from features.sales_per_brand_w1 import sales_per_brand_w1
 from features.POS_Corr import Corr_Pos
@@ -82,7 +82,7 @@ def add_all_features(df):
 
     # Season
     df = season(df)
-
+    df=tot_price_per_wk(df)
     #Correlation Price-Sales
     #df=conc_corr(df)
 
