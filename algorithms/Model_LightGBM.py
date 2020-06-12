@@ -62,10 +62,12 @@ class LightGBM(BaseModel):
         return self.X_test[['Date', 'sku', 'target', 'real_target', 'log_prediction_' + self.name, 'prediction_' + self.name]]
 
     def plot_feature_importance(self, plot_title):
-        plt.figure(figsize=(8, 5))
-        plt.xticks(rotation=90)
-        plt.title(plot_title)
-        plt.plot(self.X_train.columns, self.model.feature_importances_)
+        #plt.figure(figsize=(8, 5))
+        #plt.xticks(rotation=90)
+
+        #plt.title(plot_title)
+        #plt.plot(self.X_train.columns, self.model.feature_importances_)
+        self.model.plot_importance()
         plt.show()
 
     def run(self):

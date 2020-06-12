@@ -13,11 +13,17 @@ import sys
 from preprocessing.preprocessing import preprocessing, ohe_categorical
 from metrics.MAPE import MAPE
 from utils import add_all_features
+from pathlib import Path
+import os
 
 
 def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=False, dataAugm=True, drop_cols=[], cluster=None, name='', categorical_features=['sku', 'pack', 'brand']):
-    train = pd.read_csv("dataset/original/train.csv")
-    test = pd.read_csv("dataset/original/x_test.csv")
+
+    abs_path = Path(__file__).absolute().parent
+    train_path = os.path.join(abs_path, "dataset/original/train.csv")
+    test_path = os.path.join(abs_path, "dataset/original/x_test.csv" )
+    train = pd.read_csv(train_path)
+    test = pd.read_csv(test_path)
 
     useTest = useTest
     useScope = useScope
@@ -68,6 +74,7 @@ def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=
                           )
 
     model_gen.run_generator(save)
+    model_gen.plot_feature_importance()
     print(model_gen.compute_MAPE())
 
 def run_model(model_name, useTest):
