@@ -81,7 +81,7 @@ def add_all_features(df):
     #df=conc_corr(df)
 
     #df=df.dropna() #Use this for Random Forest
-    categorical_features = ['cluster']
+    categorical_features = ['cluster', 'heavy_light']
 
     return df, categorical_features
 
