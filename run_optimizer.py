@@ -150,7 +150,3 @@ print("""Best parameters:
 - num_leaves=%d""" 
     % (res_gp.x[0], res_gp.x[1], 
     res_gp.x[2], res_gp.x[3]))
-
-# 8.37 tutte le features tranne correlation, senza data augmentation ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster']
-# 8.302147320945176 se tolgo ['scope', 'Date', 'real_target', 'pack', 'size (GM)', 'cluster','week_of_the_year','month','brand']
-# {'max_depth': 15, 'learning_rate': 0.07617385187267685, 'n_estimators': 950, 'num_leaves': 24}
