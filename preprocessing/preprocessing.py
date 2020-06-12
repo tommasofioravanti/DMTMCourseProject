@@ -213,3 +213,10 @@ def ohe_categorical(df, categorical_features):
         dummy = pd.get_dummies(df[c], prefix=c)
         df[dummy.columns] = dummy
     return df
+
+
+def adjust_prep(df_train):
+    for i in df_train[df_train["volume_on_promo w-1"] > 100].index:
+        df_train.loc[i, "volume_on_promo w-1"] = 100
+
+    return df_train
