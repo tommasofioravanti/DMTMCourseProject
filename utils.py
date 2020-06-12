@@ -73,7 +73,6 @@ def add_all_features(df):
     cluster = get_cluster()
     df = df.merge(cluster, how='left', on='sku')
 
-
     # Gaussian Target Encoding
     abs_path = Path(__file__).absolute().parent
     gte_path = os.path.join(abs_path, "features/gte_features_w8_prp50.csv")

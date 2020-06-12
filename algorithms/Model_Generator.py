@@ -30,7 +30,7 @@ class Generator(object):
                             'all' the train set. Used for a second model step
         """
         self.useTest = useTest
-
+        self.df = df
         if self.useTest:
             df = df.sort_values('Date')
             test_dates = df[df.Date >= '2019-06-29']
@@ -132,16 +132,10 @@ class Generator(object):
 
     def compute_MAPE(self):
         if not self.evaluation:
+            if not self.useTest:
+                _, _, val_dates = train_validation_split(self.df)
+                mask_val_dates = (self.predictions.Date.isin(val_dates))
+                mape = MAPE(self.predictions[mask_val_dates].real_target, self.predictions[mask_val_dates]["prediction_" + self.name])
+                print(f'Standard MAPE = {mape}')
 
-            print(self.predictions.columns)
-            if self.useTest:
-                df_dates = self.predictions.sort_values('Date')['Date'].drop_duplicates()
-                mape = MAPE(self.predictions[self.predictions.Date.isin(df_dates[:-1])].real_target,
-                                              self.predictions[self.predictions.Date.isin(df_dates[:-1])]["prediction_" + self.name])
-                print(f'Standard MAPE = {mape}')
-                
-            else:
-                mape = MAPE(self.predictions.real_target, self.predictions["prediction_" + self.name])
-                print(f'Standard MAPE = {mape}')
-            
             return mape

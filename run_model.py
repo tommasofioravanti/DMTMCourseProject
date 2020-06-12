@@ -89,6 +89,6 @@ def run_model(model_name, useTest):
 
 if __name__=='__main__':
 
-    run_model('lgb_std', useTest=True)
+    run_model('lgb_std', useTest=False)
 
 
