@@ -19,6 +19,7 @@ from features.sales_per_brand_w1 import sales_per_brand_w1
 from features.POS_Corr import Corr_Pos
 from features.Vol_Corr import Corr
 from features.clustering import get_cluster
+from features.GaussianTargetEncoding import run_gte_feature
 
 import os
 from pathlib import Path
@@ -72,9 +73,17 @@ def add_all_features(df):
     cluster = get_cluster()
     df = df.merge(cluster, how='left', on='sku')
 
+
+    # Gaussian Target Encoding
     abs_path = Path(__file__).absolute().parent
     gte_path = os.path.join(abs_path, "features/gte_features_w8_prp50.csv")
-    gte = pd.read_csv(gte_path)
+    if os.path.isfile(gte_path):
+        gte = pd.read_csv(gte_path)
+    else:
+        print('Generate Target Encoding Feature')
+        run_gte_feature()
+        gte = pd.read_csv(gte_path)
+
     gte.Date = pd.to_datetime(gte.Date)
     df = df.merge(gte, how='left', on=['Date', 'sku', 'target', 'real_target'])
 

@@ -25,6 +25,10 @@ lgb_cls_test = pd.read_csv(path_test + "lgb_cls_test.csv")
 cat_std_train = pd.read_csv(path_train + "catboost_val.csv")
 cat_std_test = pd.read_csv(path_test + "catboost_test.csv")
 
+# XGBoost Incremental
+xgb_train = pd.read_csv(path_train + "xgb_inc_val.csv")
+xgb_test = pd.read_csv(path_test + "xgb_inc_test.csv")
+
 train = pd.read_csv("../dataset/original/train.csv")
 test = pd.read_csv("../dataset/original/x_test.csv")
 df = preprocessing(train, test, useTest=False)
@@ -32,18 +36,21 @@ df = preprocessing(train, test, useTest=False)
 # Train
 prediction_train = cat_std_train.merge(lgb_std_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
 prediction_train = lgb_cls_train.merge(prediction_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_train = prediction_train.merge(xgb_train, how='left', on=['Date', 'sku', 'target', 'real_target'])
+
 prediction_train.Date = pd.to_datetime(prediction_train.Date)
 
 prediction_train.Date = pd.to_datetime(prediction_train.Date)
-prediction_train = prediction_train.merge(df[['Date', 'sku', 'sales w-1']], how='left', on=['Date', 'sku'])
+prediction_train = prediction_train.merge(df[['Date', 'sku', 'sales w-1', 'scope']], how='left', on=['Date', 'sku'])
 
 # Test
 prediction_test = cat_std_test.merge(lgb_std_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
 prediction_test = lgb_cls_test.merge(prediction_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
+prediction_test = prediction_test.merge(xgb_test, how='left', on=['Date', 'sku', 'target', 'real_target'])
 prediction_test.Date = pd.to_datetime(prediction_test.Date)
 
 prediction_test.Date = pd.to_datetime(prediction_test.Date)
-prediction_test = prediction_test.merge(df[['Date', 'sku', 'sales w-1']], how='left')
+prediction_test = prediction_test.merge(df[['Date', 'sku', 'sales w-1', 'scope']], how='left')
 #prediction_test = prediction_test.merge(gte, how='left', on=['Date', 'sku', 'target', 'real_target'])
 
 
@@ -55,6 +62,7 @@ prediction_train = prediction_train.drop(prediction_train[mask].index)
 cols = ['log_prediction_lgb_cls',
         'log_prediction_lgb_std',
         'log_prediction_catboost',
+        'prediction'
        ]
 
 
@@ -74,6 +82,19 @@ for train, test in stacking_gen_val(prediction_train):
     preds_val = pd.concat([preds_val, test])
 
 preds_val['ensemble'] = np.expm1(preds_val.ensemble)
+#print(f'MAPE on validation set: {MAPE(preds_val.real_target, preds_val.ensemble)}')
+
+train = pd.read_csv("../dataset/original/train.csv")
+test = pd.read_csv("../dataset/original/x_test.csv")
+df = preprocessing(train, test, useTest=False, dataAugmentation=True)
+_, _, val_dates = train_validation_split(df[~df.target.isna()])
+
+mask_val_dates = (prediction_train.Date.isin(val_dates)) & (prediction_train.scope==1)
+print(f'MAPE LightGBM Standard on validation set: {MAPE(prediction_train[mask_val_dates].real_target, prediction_train[mask_val_dates].prediction_lgb_std)}')
+print(f'MAPE LightGBM Cluster on validation set: {MAPE(prediction_train[mask_val_dates].real_target, prediction_train[mask_val_dates].prediction_lgb_cls)}')
+print(f'MAPE Catboost Standard on validation set: {MAPE(prediction_train[mask_val_dates].real_target, prediction_train[mask_val_dates].prediction_catboost)}')
+print(f'MAPE XGBoost Standard on validation set: {MAPE(prediction_train[mask_val_dates].real_target, prediction_train[mask_val_dates].real_prediction)}')
+
 print(f'MAPE on validation set: {MAPE(preds_val.real_target, preds_val.ensemble)}')
 
 

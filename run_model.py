@@ -52,9 +52,6 @@ def run_main(model_params, useTest=False, useScope=True, save=False, completeCV=
     elif NAME == 'catboost':
         model = CatBoost(**model_params)
 
-    print(useTest)
-
-
     print('Start the model ' + NAME)
     model = model
     model_gen = Generator(df, model,
@@ -92,6 +89,6 @@ def run_model(model_name, useTest):
 
 if __name__=='__main__':
 
-    run_model('catboost', useTest=True)
+    run_model('lgb_std', useTest=True)
 
 
