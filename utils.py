@@ -82,7 +82,6 @@ def add_all_features(df):
 
     # Season
     df = season(df)
-    df=tot_price_per_wk(df)
     #Correlation Price-Sales
     #df=conc_corr(df)
 
