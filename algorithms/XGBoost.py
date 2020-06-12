@@ -16,7 +16,7 @@ from metrics.MAPE import MAPE
 
 from utils import add_all_features, dfs_gen
 
-def run_xgboost(useTest=False, useScope=False, completeCV = False, dataAugm = False):
+def run_xgboost(useTest=False, useScope=False, completeCV = False, dataAugm = False, save=True):
 
     train = pd.read_csv("../dataset/original/train.csv")
     test = pd.read_csv("../dataset/original/x_test.csv")
@@ -25,7 +25,7 @@ def run_xgboost(useTest=False, useScope=False, completeCV = False, dataAugm = Fa
     useScope = useScope
     isEvaluation = False
     useSampleWeights, weights_type = True, 2
-    save = False
+    save = save
 
     completeCV = completeCV  # Per avere le predizioni sul train, impostarlo a True: parte dalla prima settimana del train
     # e predice via via tutte le settimane successive incrementando il train
@@ -157,11 +157,12 @@ def run_xgboost(useTest=False, useScope=False, completeCV = False, dataAugm = Fa
         mask_val = (prediction_df.Date.isin(val_dates)) & (prediction_df.scope == 1)
         print(f'MAPE {MAPE(prediction_df[mask_val].real_target, prediction_df[mask_val].real_prediction)}')
 
-    if useTest:
-        prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/test/xgb_inc_test_1.csv", index=False)
-    else:
-        if completeCV:
-            prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/val/xgb_inc_val_1.csv", index=False)
+    if save:
+        if useTest:
+            prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/test/xgb_inc_test_1.csv", index=False)
+        else:
+            if completeCV:
+                prediction_df.drop('scope', axis=1).to_csv("../dataset/prediction/val/xgb_inc_val_1.csv", index=False)
 
     plt.figure(figsize=(20, 10))
 
@@ -183,8 +184,8 @@ if __name__=='__main__':
     """
 
     # Running on Validation
-    run_xgboost(useTest=False, useScope=False, completeCV = True, dataAugm = True)
+    run_xgboost(useTest=False, useScope=False, completeCV = True, dataAugm=True, save=True)
 
     # Running on Test
-    run_xgboost(useTest=True, useScope=True, completeCV=False, dataAugm=False)
+    run_xgboost(useTest=True, useScope=True, completeCV=False, dataAugm=False, save=True)
 
