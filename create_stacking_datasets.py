@@ -39,7 +39,7 @@ test_params_cluster = test_params.copy()
 test_params_cluster['cluster'] = [1,2]
 
 # Create Prediction on both Train and Test
-"""
+
 # LightGBM Standard
 lgb_model_params = {'num_leaves':31, 'max_depth': -1, 'learning_rate': 0.06, 'n_estimators': 950}
 
@@ -88,7 +88,7 @@ lgb_test_params_cluster['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 
 
 main(model = LightGBM(**lgb_cluster_model_params), **lgb_train_params_cluster)
 main(model=LightGBM(**lgb_cluster_model_params),**lgb_test_params_cluster)
-"""
+
 
 # Catboost Standard
 catboost_model_params = {'num_leaves':31, 'learning_rate':0.1, 'n_estimators':600}
@@ -108,7 +108,7 @@ catboost_test_params['drop_cols'] = ['scope', 'Date', 'real_target', 'pack', 'si
 main(model=CatBoost(**catboost_model_params), **catboost_train_params)
 main(model=CatBoost(**catboost_model_params),**catboost_test_params)
 
-"""
+
 # Linear Regression per sku
 train_params['name'] = 'linear_reg'
 test_params['name'] = 'linear_reg'
@@ -124,4 +124,3 @@ test_params['rand_noise'] = True
 
 main(model=LinearRegressionClass(), **train_params)
 main(model=LinearRegressionClass(), **test_params)
-"""
