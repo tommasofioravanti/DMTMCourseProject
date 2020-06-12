@@ -131,6 +131,7 @@ class Generator(object):
         self.model.plot_feature_importance(self.name)
 
     def compute_MAPE(self):
+        mape = None
         if not self.evaluation:
             if not self.useTest:
                 _, _, val_dates = train_validation_split(self.df)
