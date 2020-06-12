@@ -20,6 +20,10 @@ from features.POS_Corr import Corr_Pos
 from features.Vol_Corr import Corr
 from features.clustering import get_cluster
 
+import os
+from pathlib import Path
+
+
 def dfs_gen(df, dates):
     """
     Train-Test generator
@@ -68,7 +72,9 @@ def add_all_features(df):
     cluster = get_cluster()
     df = df.merge(cluster, how='left', on='sku')
 
-    gte = pd.read_csv("features/gte_features_w8_prp50.csv")
+    abs_path = Path(__file__).absolute().parent
+    gte_path = os.path.join(abs_path, "features/gte_features_w8_prp50.csv")
+    gte = pd.read_csv(gte_path)
     gte.Date = pd.to_datetime(gte.Date)
     df = df.merge(gte, how='left', on=['Date', 'sku', 'target', 'real_target'])
 
